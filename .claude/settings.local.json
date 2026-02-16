@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:developers.openai.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh api:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout:*)",
+      "Bash(node -e \"\nconst { spawn } = require\\(''child_process''\\);\nconst child = spawn\\(''node'', [''server.js''], { stdio: ''pipe'' }\\);\nlet output = '''';\nchild.stdout.on\\(''data'', d => output += d.toString\\(\\)\\);\nchild.stderr.on\\(''data'', d => output += d.toString\\(\\)\\);\nsetTimeout\\(\\(\\) => { child.kill\\(\\); console.log\\(output\\); }, 3000\\);\n\")",
+      "Bash(node:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
+    ]
+  }
+}

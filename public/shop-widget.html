@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pizzaz Shop</title>
+<style>
+  /* ─── Reset & Base ─────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --orange: #F46C21;
+    --orange-dark: #D95A14;
+    --orange-light: #FFF3EB;
+    --green: #22C55E;
+    --green-light: #DCFCE7;
+    --red: #EF4444;
+    --bg: #FFFFFF;
+    --surface: #F9FAFB;
+    --border: rgba(0,0,0,0.08);
+    --text: #111827;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+    --transition: 0.2s ease;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ─── Layout ───────────────────────────────────────────────────────────── */
+  .app { max-width: 100%; min-height: 100vh; }
+  .container { padding: 16px; }
+
+  /* ─── Header ───────────────────────────────────────────────────────────── */
+  .header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px; border-bottom: 1px solid var(--border);
+  }
+  .header-logo {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--orange); display: flex; align-items: center;
+    justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .header-text h1 { font-size: 17px; font-weight: 600; }
+  .header-text p { font-size: 13px; color: var(--text-secondary); }
+
+  /* ─── Buttons ──────────────────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--radius-xs); font-size: 14px;
+    font-weight: 500; border: none; cursor: pointer; transition: all var(--transition);
+    text-decoration: none; line-height: 1.4;
+  }
+  .btn-primary { background: var(--orange); color: #fff; }
+  .btn-primary:hover { background: var(--orange-dark); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #F3F4F6; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-block { width: 100%; }
+  .btn-icon {
+    width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* ─── Filters ──────────────────────────────────────────────────────────── */
+  .filters {
+    display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text-secondary);
+    cursor: pointer; white-space: nowrap; transition: all var(--transition);
+  }
+  .filter-chip.active {
+    background: var(--text); color: #fff; border-color: var(--text);
+  }
+
+  /* ─── Menu Grid ────────────────────────────────────────────────────────── */
+  .menu-grid {
+    display: grid; grid-template-columns: 1fr; gap: 12px; padding: 16px;
+  }
+  @media (min-width: 480px) { .menu-grid { grid-template-columns: 1fr 1fr; } }
+
+  .menu-card {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; background: var(--bg); transition: all var(--transition);
+    cursor: pointer;
+  }
+  .menu-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+  .menu-card-img {
+    width: 100%; height: 140px; object-fit: cover; background: var(--surface);
+  }
+  .menu-card-body { padding: 12px; }
+  .menu-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .menu-card-name { font-size: 15px; font-weight: 600; }
+  .menu-card-price {
+    font-size: 15px; font-weight: 600; color: var(--orange);
+    white-space: nowrap; margin-left: 8px;
+  }
+  .menu-card-desc { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+  .menu-card-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px;
+  }
+  .rating { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-secondary); }
+  .rating svg { width: 14px; height: 14px; }
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 500; background: var(--orange-light);
+    color: var(--orange); margin-right: 4px;
+  }
+  .tag.green { background: var(--green-light); color: #16A34A; }
+
+  /* ─── Specials Carousel ────────────────────────────────────────────────── */
+  .carousel-wrapper { position: relative; padding: 16px 0; }
+  .carousel-track {
+    display: flex; gap: 12px; overflow-x: auto; padding: 0 16px;
+    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .carousel-track::-webkit-scrollbar { display: none; }
+  .special-card {
+    flex: 0 0 260px; scroll-snap-align: start;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; background: var(--bg); position: relative;
+  }
+  .special-card-img {
+    width: 100%; height: 140px; object-fit: cover; background: var(--surface);
+  }
+  .special-badge {
+    position: absolute; top: 10px; left: 10px;
+    padding: 4px 10px; border-radius: 8px;
+    font-size: 11px; font-weight: 600; color: #fff;
+    background: var(--orange);
+  }
+  .special-card-body { padding: 12px; }
+  .special-card-name { font-size: 15px; font-weight: 600; }
+  .special-card-desc { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .special-pricing { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .special-price { font-size: 18px; font-weight: 700; color: var(--orange); }
+  .special-original {
+    font-size: 14px; color: var(--text-muted);
+    text-decoration: line-through;
+  }
+  .carousel-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; border-radius: 50%; background: #fff;
+    border: 1px solid var(--border); cursor: pointer; display: flex;
+    align-items: center; justify-content: center; box-shadow: var(--shadow);
+    z-index: 5; transition: all var(--transition);
+  }
+  .carousel-nav:hover { box-shadow: var(--shadow-lg); }
+  .carousel-nav.prev { left: 6px; }
+  .carousel-nav.next { right: 6px; }
+
+  /* ─── Store Map ────────────────────────────────────────────────────────── */
+  .stores-section { padding: 16px; }
+  .store-map-placeholder {
+    width: 100%; height: 200px; border-radius: var(--radius);
+    background: linear-gradient(135deg, #E0F2FE 0%, #DBEAFE 50%, #E0E7FF 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin-bottom: 12px; position: relative; overflow: hidden;
+  }
+  .map-grid {
+    position: absolute; inset: 0; opacity: 0.15;
+    background-image:
+      linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+  .map-pin {
+    width: 28px; height: 28px; background: var(--orange); border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg); position: relative; z-index: 2;
+    box-shadow: 0 2px 8px rgba(244,108,33,0.4);
+  }
+  .map-pin::after {
+    content: ""; position: absolute; top: 6px; left: 6px;
+    width: 16px; height: 16px; background: #fff; border-radius: 50%;
+  }
+  .map-label {
+    margin-top: 12px; font-size: 13px; color: var(--text-secondary);
+    z-index: 2; font-weight: 500;
+  }
+  .store-list { display: flex; flex-direction: column; gap: 8px; }
+  .store-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); transition: all var(--transition);
+    cursor: pointer;
+  }
+  .store-card:hover { border-color: var(--orange); background: var(--orange-light); }
+  .store-icon {
+    width: 40px; height: 40px; border-radius: 10px; background: var(--orange-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .store-info { flex: 1; min-width: 0; }
+  .store-name { font-size: 14px; font-weight: 600; }
+  .store-detail { font-size: 12px; color: var(--text-secondary); }
+  .store-meta { text-align: right; flex-shrink: 0; }
+  .store-rating { font-size: 13px; font-weight: 600; }
+  .store-hours { font-size: 11px; color: var(--text-secondary); }
+
+  /* ─── Cart ─────────────────────────────────────────────────────────────── */
+  .cart-section { padding: 16px; }
+  .cart-empty {
+    text-align: center; padding: 40px 16px;
+    color: var(--text-secondary); font-size: 14px;
+  }
+  .cart-empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .cart-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .cart-item:last-child { border-bottom: none; }
+  .cart-item-img {
+    width: 56px; height: 56px; border-radius: var(--radius-sm);
+    object-fit: cover; background: var(--surface); flex-shrink: 0;
+  }
+  .cart-item-info { flex: 1; min-width: 0; }
+  .cart-item-name { font-size: 14px; font-weight: 600; }
+  .cart-item-desc { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cart-item-qty {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .qty-btn {
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
+    background: var(--bg); cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 16px;
+    transition: all var(--transition);
+  }
+  .qty-btn:hover { background: var(--surface); }
+  .qty-num { font-size: 14px; font-weight: 600; min-width: 20px; text-align: center; }
+  .cart-item-price { font-size: 14px; font-weight: 600; color: var(--orange); margin-left: 12px; white-space: nowrap; }
+
+  .cart-summary {
+    margin-top: 16px; padding: 16px; background: var(--surface);
+    border-radius: var(--radius-sm);
+  }
+  .cart-summary-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; padding: 4px 0; color: var(--text-secondary);
+  }
+  .cart-summary-row.total {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    border-top: 1px solid var(--border); margin-top: 8px; padding-top: 10px;
+  }
+
+  /* ─── Confirmation ─────────────────────────────────────────────────────── */
+  .confirmation { padding: 24px 16px; text-align: center; }
+  .confirm-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--green-light); display: flex;
+    align-items: center; justify-content: center;
+    margin: 0 auto 16px; font-size: 28px;
+  }
+  .confirm-title { font-size: 20px; font-weight: 700; }
+  .confirm-order-id {
+    font-size: 13px; color: var(--text-secondary); margin-top: 4px;
+  }
+  .confirm-eta {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 12px; padding: 8px 16px; background: var(--orange-light);
+    border-radius: 20px; font-size: 14px; font-weight: 600; color: var(--orange);
+  }
+  .confirm-items {
+    margin-top: 20px; text-align: left;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .confirm-items-header {
+    padding: 10px 14px; background: var(--surface);
+    font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  }
+  .confirm-item {
+    display: flex; justify-content: space-between; padding: 10px 14px;
+    font-size: 14px; border-top: 1px solid var(--border);
+  }
+
+  /* ─── Error ────────────────────────────────────────────────────────────── */
+  .error-view {
+    padding: 40px 16px; text-align: center;
+    color: var(--red); font-size: 14px;
+  }
+
+  /* ─── Loading ──────────────────────────────────────────────────────────── */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 60px 16px; color: var(--text-muted); font-size: 14px;
+  }
+  .loading-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--orange);
+    margin: 0 3px; animation: bounce 1.4s infinite ease-in-out both;
+  }
+  .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+  .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+
+  /* ─── Animations ───────────────────────────────────────────────────────── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slide-up { animation: slideUp 0.4s ease forwards; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="loading">
+    <div class="loading-dot"></div>
+    <div class="loading-dot"></div>
+    <div class="loading-dot"></div>
+  </div>
+</div>
+
+<script>
+// ─── MCP Apps Bridge (JSON-RPC over postMessage) ───────────────────────────
+let rpcId = 0;
+const pendingRequests = new Map();
+let bridgeReady = null;
+let bridgeReadyResolve = null;
+bridgeReady = new Promise((resolve) => { bridgeReadyResolve = resolve; });
+
+const rpcRequest = (method, params) =>
+  new Promise((resolve, reject) => {
+    const id = ++rpcId;
+    pendingRequests.set(id, { resolve, reject });
+    window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+  });
+
+const rpcNotify = (method, params) =>
+  window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
+
+async function initializeBridge() {
+  try {
+    await rpcRequest("ui/initialize", {
+      appInfo: { name: "pizzaz-shop", version: "1.0.0" },
+      appCapabilities: {},
+      protocolVersion: "2026-01-26",
+    });
+    rpcNotify("ui/notifications/initialized", {});
+    bridgeReadyResolve();
+  } catch (e) {
+    console.error("Bridge init failed:", e);
+    bridgeReadyResolve(); // resolve anyway so UI doesn't hang
+  }
+}
+
+async function callTool(name, args) {
+  await bridgeReady;
+  const response = await rpcRequest("tools/call", { name, arguments: args });
+  if (response?.structuredContent) {
+    render(response.structuredContent);
+  }
+  return response;
+}
+
+window.addEventListener("message", (event) => {
+  if (event.source !== window.parent) return;
+  const msg = event.data;
+  if (!msg || msg.jsonrpc !== "2.0") return;
+
+  // Handle RPC responses
+  if (msg.id && pendingRequests.has(msg.id)) {
+    const { resolve, reject } = pendingRequests.get(msg.id);
+    pendingRequests.delete(msg.id);
+    if (msg.error) reject(msg.error);
+    else resolve(msg.result);
+    return;
+  }
+
+  // Handle tool result notifications from ChatGPT
+  if (msg.method === "ui/notifications/tool-result") {
+    const data = msg.params?.structuredContent;
+    if (data) render(data);
+  }
+});
+
+// ─── SVG Icons ──────────────────────────────────────────────────────────────
+const icons = {
+  star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+  cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+  chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>',
+  chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  mapPin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+};
+
+// ─── Rendering ──────────────────────────────────────────────────────────────
+const app = document.getElementById("app");
+
+function render(data) {
+  const { view } = data;
+  switch (view) {
+    case "menu": renderMenu(data); break;
+    case "specials": renderSpecials(data); break;
+    case "stores": renderStores(data); break;
+    case "cart": renderCart(data); break;
+    case "confirmation": renderConfirmation(data); break;
+    case "error": renderError(data); break;
+    default: renderError({ message: "Unknown view" });
+  }
+}
+
+// ─── Menu View ──────────────────────────────────────────────────────────────
+function renderMenu(data) {
+  const { items, filter } = data;
+  const filters = ["all", "vegetarian", "spicy", "popular", "premium"];
+
+  app.innerHTML = `
+    <div class="header">
+      <div class="header-logo">🍕</div>
+      <div class="header-text">
+        <h1>Pizzaz Menu</h1>
+        <p>${items.length} pizza${items.length !== 1 ? 's' : ''} available</p>
+      </div>
+    </div>
+    <div class="filters">
+      ${filters.map(f => `
+        <button class="filter-chip ${f === filter ? 'active' : ''}" data-filter="${f}">
+          ${f.charAt(0).toUpperCase() + f.slice(1)}
+        </button>
+      `).join('')}
+    </div>
+    <div class="menu-grid">
+      ${items.map((item, i) => `
+        <div class="menu-card fade-in" style="animation-delay: ${i * 0.05}s" data-id="${item.id}">
+          <img class="menu-card-img" src="${item.image}" alt="${item.name}" loading="lazy" />
+          <div class="menu-card-body">
+            <div class="menu-card-top">
+              <span class="menu-card-name">${item.name}</span>
+              <span class="menu-card-price">$${item.price.toFixed(2)}</span>
+            </div>
+            <div class="menu-card-desc">${item.description}</div>
+            <div class="menu-card-footer">
+              <div>
+                ${item.tags.map(t =>
+                  `<span class="tag ${t === 'vegetarian' ? 'green' : ''}">${t}</span>`
+                ).join('')}
+              </div>
+              <div class="rating">
+                ${icons.star}
+                ${item.rating}
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block btn-sm" style="margin-top:10px" data-add="${item.id}">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Filter clicks
+  app.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      callTool('browse_menu', { filter: chip.dataset.filter });
+    });
+  });
+
+  // Add to cart clicks
+  app.querySelectorAll('[data-add]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemId = btn.dataset.add;
+      btn.textContent = 'Added!';
+      btn.style.background = 'var(--green)';
+      callTool('add_to_cart', { item_id: itemId, quantity: 1 });
+      setTimeout(() => {
+        btn.textContent = 'Add to Cart';
+        btn.style.background = '';
+      }, 1200);
+    });
+  });
+}
+
+// ─── Specials View ──────────────────────────────────────────────────────────
+function renderSpecials(data) {
+  const { specials } = data;
+
+  app.innerHTML = `
+    <div class="header">
+      <div class="header-logo">🔥</div>
+      <div class="header-text">
+        <h1>Today's Specials</h1>
+        <p>${specials.length} deals available</p>
+      </div>
+    </div>
+    <div class="carousel-wrapper">
+      <div class="carousel-track" id="carouselTrack">
+        ${specials.map((s, i) => `
+          <div class="special-card fade-in" style="animation-delay: ${i * 0.1}s">
+            <img class="special-card-img" src="${s.image}" alt="${s.name}" loading="lazy" />
+            <div class="special-badge">${s.badge}</div>
+            <div class="special-card-body">
+              <div class="special-card-name">${s.name}</div>
+              <div class="special-card-desc">${s.description}</div>
+              <div class="special-pricing">
+                <span class="special-price">$${s.price.toFixed(2)}</span>
+                <span class="special-original">$${s.originalPrice.toFixed(2)}</span>
+              </div>
+              <button class="btn btn-primary btn-block btn-sm" style="margin-top:10px" data-special="${s.id}">
+                Grab This Deal
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="carousel-nav prev" id="carouselPrev">${icons.chevronLeft}</button>
+      <button class="carousel-nav next" id="carouselNext">${icons.chevronRight}</button>
+    </div>
+  `;
+
+  const track = document.getElementById('carouselTrack');
+  document.getElementById('carouselPrev').addEventListener('click', () => {
+    track.scrollBy({ left: -280, behavior: 'smooth' });
+  });
+  document.getElementById('carouselNext').addEventListener('click', () => {
+    track.scrollBy({ left: 280, behavior: 'smooth' });
+  });
+}
+
+// ─── Stores View ────────────────────────────────────────────────────────────
+function renderStores(data) {
+  const { stores } = data;
+
+  app.innerHTML = `
+    <div class="header">
+      <div class="header-logo" style="font-size:18px">${icons.mapPin}</div>
+      <div class="header-text">
+        <h1>Nearby Stores</h1>
+        <p>${stores.length} locations found</p>
+      </div>
+    </div>
+    <div class="stores-section">
+      <div class="store-map-placeholder slide-up">
+        <div class="map-grid"></div>
+        <div class="map-pin"></div>
+        <div class="map-label">${stores.length} Pizzaz locations in San Francisco</div>
+      </div>
+      <div class="store-list">
+        ${stores.map((s, i) => `
+          <div class="store-card fade-in" style="animation-delay: ${i * 0.05}s" data-store="${s.id}">
+            <div class="store-icon">📍</div>
+            <div class="store-info">
+              <div class="store-name">${s.name}</div>
+              <div class="store-detail">${s.address}, ${s.city}</div>
+              <div class="store-detail">${s.phone}</div>
+            </div>
+            <div class="store-meta">
+              <div class="store-rating">⭐ ${s.rating}</div>
+              <div class="store-hours">${s.hours}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ─── Cart View ──────────────────────────────────────────────────────────────
+function renderCart(data) {
+  const { cartItems, total } = data;
+
+  if (!cartItems || cartItems.length === 0) {
+    app.innerHTML = `
+      <div class="header">
+        <div class="header-logo">${icons.cart}</div>
+        <div class="header-text">
+          <h1>Your Cart</h1>
+          <p>0 items</p>
+        </div>
+      </div>
+      <div class="cart-empty slide-up">
+        <div class="cart-empty-icon">🛒</div>
+        <p>Your cart is empty</p>
+        <p style="font-size:12px;margin-top:4px;color:var(--text-muted)">Ask me to show the menu to start ordering!</p>
+      </div>
+    `;
+    return;
+  }
+
+  const itemCount = cartItems.reduce((s, c) => s + c.quantity, 0);
+  const subtotal = total;
+  const deliveryFee = 4.99;
+  const serviceFee = 2.99;
+  const tax = subtotal * 0.0875;
+  const grandTotal = subtotal + deliveryFee + serviceFee + tax;
+
+  app.innerHTML = `
+    <div class="header">
+      <div class="header-logo">${icons.cart}</div>
+      <div class="header-text">
+        <h1>Your Cart</h1>
+        <p>${itemCount} item${itemCount !== 1 ? 's' : ''}</p>
+      </div>
+    </div>
+    <div class="cart-section">
+      ${cartItems.map((item, i) => `
+        <div class="cart-item fade-in" style="animation-delay: ${i * 0.05}s">
+          <img class="cart-item-img" src="${item.image}" alt="${item.name}" loading="lazy" />
+          <div class="cart-item-info">
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-desc">${item.description}</div>
+          </div>
+          <div class="cart-item-qty">
+            <button class="qty-btn" data-qty-minus="${item.id}">${icons.minus}</button>
+            <span class="qty-num">${item.quantity}</span>
+            <button class="qty-btn" data-qty-plus="${item.id}">${icons.plus}</button>
+          </div>
+          <div class="cart-item-price">$${(item.price * item.quantity).toFixed(2)}</div>
+        </div>
+      `).join('')}
+      <div class="cart-summary slide-up">
+        <div class="cart-summary-row">
+          <span>Subtotal</span><span>$${subtotal.toFixed(2)}</span>
+        </div>
+        <div class="cart-summary-row">
+          <span>Delivery Fee</span><span>$${deliveryFee.toFixed(2)}</span>
+        </div>
+        <div class="cart-summary-row">
+          <span>Service Fee</span><span>$${serviceFee.toFixed(2)}</span>
+        </div>
+        <div class="cart-summary-row">
+          <span>Tax</span><span>$${tax.toFixed(2)}</span>
+        </div>
+        <div class="cart-summary-row total">
+          <span>Total</span><span>$${grandTotal.toFixed(2)}</span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" style="margin-top:16px;padding:12px;font-size:15px" id="checkoutBtn">
+        Place Order — $${grandTotal.toFixed(2)}
+      </button>
+    </div>
+  `;
+
+  document.getElementById('checkoutBtn')?.addEventListener('click', () => {
+    callTool('place_order', { tip_percent: 18 });
+  });
+}
+
+// ─── Confirmation View ──────────────────────────────────────────────────────
+function renderConfirmation(data) {
+  const { orderId, items, subtotal, deliveryFee, serviceFee, tax, tip, grandTotal, eta, method, store } = data;
+
+  app.innerHTML = `
+    <div class="confirmation slide-up">
+      <div class="confirm-icon">${icons.check}</div>
+      <div class="confirm-title">Order Placed!</div>
+      <div class="confirm-order-id">Order #${orderId}</div>
+      <div class="confirm-eta">
+        ${icons.clock}
+        ${method === 'pickup' && store ? `Pickup at ${store.name}` : 'Delivery'} — ${eta}
+      </div>
+      <div class="confirm-items">
+        <div class="confirm-items-header">Order Summary</div>
+        ${items.map(item => `
+          <div class="confirm-item">
+            <span>${item.quantity}x ${item.name}</span>
+            <span>$${(item.price * item.quantity).toFixed(2)}</span>
+          </div>
+        `).join('')}
+        <div class="confirm-item" style="color:var(--text-secondary)">
+          <span>Delivery</span><span>$${deliveryFee.toFixed(2)}</span>
+        </div>
+        <div class="confirm-item" style="color:var(--text-secondary)">
+          <span>Service Fee</span><span>$${serviceFee.toFixed(2)}</span>
+        </div>
+        <div class="confirm-item" style="color:var(--text-secondary)">
+          <span>Tax</span><span>$${tax.toFixed(2)}</span>
+        </div>
+        <div class="confirm-item" style="color:var(--text-secondary)">
+          <span>Tip</span><span>$${tip.toFixed(2)}</span>
+        </div>
+        <div class="confirm-item" style="font-weight:700">
+          <span>Grand Total</span><span>$${grandTotal.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Error View ─────────────────────────────────────────────────────────────
+function renderError(data) {
+  app.innerHTML = `
+    <div class="error-view">
+      <p style="font-size:24px;margin-bottom:8px">⚠️</p>
+      <p>${data.message || 'Something went wrong'}</p>
+    </div>
+  `;
+}
+
+// ─── Initialize ─────────────────────────────────────────────────────────────
+initializeBridge();
+</script>
+</body>
+</html>
