@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   registerAppResource,
   registerAppTool,
@@ -106,13 +107,12 @@ const STORES = [
   { id: "alamo-square", name: "Pizzaz Alamo Square", address: "701 Divisadero St", city: "Alamo Square, SF", coords: [-122.4388, 37.7775], hours: "11am–10pm", rating: 4.4, phone: "(415) 555-0105" },
 ];
 
-// ─── In-memory Cart (per session) ───────────────────────────────────────────
-const carts = new Map();
+// ─── In-memory Cart (shared — each ChatGPT tool call may use a different
+//     MCP session, so we use a single global cart for this demo) ─────────────
+let cart = [];
 
-function getCart(sessionId) {
-  if (!carts.has(sessionId)) carts.set(sessionId, []);
-  return carts.get(sessionId);
-}
+// ─── Order History (for reorder support) ────────────────────────────────────
+let lastOrder = null;
 
 // ─── Server Factory ─────────────────────────────────────────────────────────
 const WIDGET_URI = "ui://widget/pizzaz-shop.html";
@@ -138,7 +138,7 @@ function createPizzazServer() {
     {
       title: "Browse Pizza Menu",
       description:
-        "Shows the full Pizzaz pizza menu with prices, descriptions, and ratings. Use when the user wants to see what pizzas are available.",
+        "Shows the full Pizzaz pizza menu with prices, descriptions, and ratings. Use when the user wants to see what pizzas are available. After showing the menu, offer to recommend a pizza based on their preferences or add one to the cart.",
       inputSchema: {
         filter: z
           .enum(["all", "vegetarian", "spicy", "popular", "premium"])
@@ -172,7 +172,7 @@ function createPizzazServer() {
     {
       title: "View Today's Specials",
       description:
-        "Shows today's deals and combo specials with discounted prices. Use when the user asks about deals, specials, or wants to save money.",
+        "Shows today's deals and combo specials with discounted prices. Use when the user asks about deals, specials, or wants to save money. Proactively suggest the best deal based on group size or budget.",
       inputSchema: {},
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
@@ -210,7 +210,7 @@ function createPizzazServer() {
     {
       title: "Add to Cart",
       description:
-        "Adds a pizza to the shopping cart. Use when the user wants to order a specific pizza.",
+        "Adds a pizza to the shopping cart. Use when the user wants to order a specific pizza. After adding, always call find_best_deal to check if a combo or special would save the user money.",
       inputSchema: {
         item_id: z.string().describe("The pizza ID to add (e.g. 'margherita', 'pepperoni')"),
         quantity: z.number().int().min(1).max(10).optional().describe("How many to add (default 1)"),
@@ -218,8 +218,7 @@ function createPizzazServer() {
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ item_id, quantity }, extra) => {
-      const sessionId = extra?.sessionId || "default";
+    async ({ item_id, quantity }) => {
       const pizza = MENU.find((p) => p.id === item_id);
       if (!pizza) {
         return {
@@ -227,7 +226,6 @@ function createPizzazServer() {
           structuredContent: { view: "error", message: `Pizza "${item_id}" not found.` },
         };
       }
-      const cart = getCart(sessionId);
       const qty = quantity || 1;
       const existing = cart.find((c) => c.id === item_id);
       if (existing) {
@@ -260,9 +258,7 @@ function createPizzazServer() {
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
-    async (_args, extra) => {
-      const sessionId = extra?.sessionId || "default";
-      const cart = getCart(sessionId);
+    async () => {
       const total = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
       return {
         content: [
@@ -278,6 +274,243 @@ function createPizzazServer() {
     }
   );
 
+  // ─── Tool: Recommend Pizza ──────────────────────────────────────────────
+  registerAppTool(
+    server,
+    "recommend_pizza",
+    {
+      title: "Get Pizza Recommendation",
+      description:
+        "Returns a personalized pizza recommendation based on the user's preferences. Use this proactively when the user says they're hungry, can't decide, wants a suggestion, or describes what they like (e.g. 'something spicy', 'I'm vegetarian', 'feed my family'). After recommending, offer to add the pizza to the cart immediately.",
+      inputSchema: {
+        preferences: z.array(z.enum(["vegetarian", "spicy", "popular", "premium", "budget", "top-rated"])).optional()
+          .describe("User taste preferences — infer from conversation context"),
+        group_size: z.number().int().min(1).max(20).optional()
+          .describe("How many people eating (default 1)"),
+        budget: z.number().optional()
+          .describe("Max budget in dollars — helps narrow the pick"),
+      },
+      _meta: { ui: { resourceUri: WIDGET_URI } },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    },
+    async ({ preferences, group_size, budget }) => {
+      let candidates = [...MENU];
+      const prefs = preferences || [];
+      const size = group_size || 1;
+
+      if (prefs.includes("vegetarian")) candidates = candidates.filter(p => p.tags.includes("vegetarian"));
+      if (prefs.includes("spicy")) candidates = candidates.filter(p => p.tags.includes("spicy"));
+      if (prefs.includes("popular")) candidates = candidates.filter(p => p.tags.includes("popular"));
+      if (prefs.includes("premium")) candidates = candidates.filter(p => p.tags.includes("premium"));
+      if (prefs.includes("budget")) candidates = candidates.filter(p => p.price <= 16.99);
+      if (budget) candidates = candidates.filter(p => p.price * size <= budget);
+      if (prefs.includes("top-rated")) candidates.sort((a, b) => b.rating - a.rating);
+
+      if (candidates.length === 0) candidates = [...MENU];
+      candidates.sort((a, b) => b.rating - a.rating);
+
+      const pick = candidates[0];
+      const quantity = Math.max(1, Math.ceil(size / 2));
+      const totalEstimate = pick.price * quantity;
+
+      const matchingDeal = size >= 4 ? SPECIALS.find(s => s.id === "party-pack")
+        : size >= 2 ? SPECIALS.find(s => s.id === "family-deal")
+        : null;
+
+      let dealHint = "";
+      if (matchingDeal) {
+        dealHint = ` Consider the ${matchingDeal.name} ($${matchingDeal.price}) — saves $${(matchingDeal.originalPrice - matchingDeal.price).toFixed(2)} vs ordering separately.`;
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: `Recommendation: ${quantity}x ${pick.name} ($${pick.price} each, ${pick.rating} stars) — "${pick.description}". Estimated total: $${totalEstimate.toFixed(2)}.${dealHint} Say "add it" to put it in your cart.`,
+        }],
+        structuredContent: {
+          view: "menu",
+          items: [pick],
+          filter: "recommendation",
+          recommendation: { pick, quantity, totalEstimate, deal: matchingDeal || undefined },
+        },
+      };
+    }
+  );
+
+  // ─── Tool: Find Best Deal ─────────────────────────────────────────────
+  registerAppTool(
+    server,
+    "find_best_deal",
+    {
+      title: "Find Best Deal",
+      description:
+        "Analyzes the current cart and checks if a combo deal or special would save the user money. Call this automatically after items are added to the cart. Also use when the user asks about saving money or getting the best price.",
+      inputSchema: {},
+      _meta: { ui: { resourceUri: WIDGET_URI } },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    },
+    async () => {
+      const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
+      const cartQty = cart.reduce((sum, c) => sum + c.quantity, 0);
+
+      if (cart.length === 0) {
+        return {
+          content: [{ type: "text", text: "Cart is empty — add some pizzas first, then I can find the best deal." }],
+          structuredContent: { view: "specials", specials: SPECIALS, dealAnalysis: { cartTotal: 0, bestDeal: null, savings: 0 } },
+        };
+      }
+
+      const applicableDeals = SPECIALS.map(special => {
+        let savings = 0;
+        let applicable = false;
+        if (special.id === "lunch-combo" && cartQty === 1) { applicable = true; savings = cartTotal - special.price; }
+        if (special.id === "family-deal" && cartQty >= 2) { applicable = true; savings = cartTotal - special.price; }
+        if (special.id === "date-night" && cartQty >= 1 && cart.some(c => c.tags.includes("premium"))) { applicable = true; savings = cartTotal - special.price; }
+        if (special.id === "party-pack" && cartQty >= 3) { applicable = true; savings = cartTotal - special.price; }
+        return { ...special, applicable, savings };
+      }).filter(d => d.applicable && d.savings > 0).sort((a, b) => b.savings - a.savings);
+
+      const bestDeal = applicableDeals[0] || null;
+
+      return {
+        content: [{
+          type: "text",
+          text: bestDeal
+            ? `Your cart is $${cartTotal.toFixed(2)}. Switch to the ${bestDeal.name} ($${bestDeal.price}) and save $${bestDeal.savings.toFixed(2)}! ${bestDeal.description}.`
+            : `Your cart total is $${cartTotal.toFixed(2)}. No better combo deal available — you're already getting a good price.`,
+        }],
+        structuredContent: {
+          view: "specials",
+          specials: SPECIALS,
+          dealAnalysis: { cartTotal, cartQty, bestDeal, allDeals: applicableDeals },
+        },
+      };
+    }
+  );
+
+  // ─── Tool: Quick Order ────────────────────────────────────────────────
+  registerAppTool(
+    server,
+    "quick_order",
+    {
+      title: "Quick Order",
+      description:
+        "One-shot ordering: builds a full cart based on group size, preferences, and budget, then shows a summary ready to confirm. Use when the user says something like 'order pizza for 4 people', 'surprise me', 'I'm hungry just order something', or gives a budget. This replaces the need to browse, add to cart, and checkout separately.",
+      inputSchema: {
+        group_size: z.number().int().min(1).max(20).optional()
+          .describe("Number of people to feed (default 1)"),
+        preferences: z.array(z.enum(["vegetarian", "spicy", "popular", "premium", "budget", "top-rated", "mixed"])).optional()
+          .describe("Taste preferences — 'mixed' means a variety of styles"),
+        budget: z.number().optional()
+          .describe("Max total budget in dollars"),
+        pickup_store: z.string().optional()
+          .describe("Store ID for pickup, omit for delivery"),
+      },
+      _meta: { ui: { resourceUri: WIDGET_URI } },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    async ({ group_size, preferences, budget, pickup_store }) => {
+      const size = group_size || 1;
+      const prefs = preferences || ["popular", "top-rated"];
+      const pizzasNeeded = Math.max(1, Math.ceil(size / 2));
+
+      let candidates = [...MENU];
+      if (prefs.includes("vegetarian")) candidates = candidates.filter(p => p.tags.includes("vegetarian"));
+      if (prefs.includes("spicy")) candidates = candidates.filter(p => p.tags.includes("spicy"));
+      if (prefs.includes("budget")) candidates = candidates.filter(p => p.price <= 16.99);
+      if (prefs.includes("premium")) candidates = candidates.filter(p => p.tags.includes("premium"));
+
+      if (candidates.length === 0) candidates = [...MENU];
+      candidates.sort((a, b) => b.rating - a.rating);
+
+      if (prefs.includes("mixed")) {
+        const shuffled = candidates.sort(() => Math.random() - 0.5);
+        candidates = shuffled;
+      }
+
+      const selected = candidates.slice(0, pizzasNeeded);
+
+      cart.length = 0;
+      for (const pizza of selected) {
+        cart.push({ ...pizza, quantity: 1 });
+      }
+
+      if (budget) {
+        let total = cart.reduce((s, c) => s + c.price * c.quantity, 0);
+        while (total > budget && cart.length > 1) {
+          cart.pop();
+          total = cart.reduce((s, c) => s + c.price * c.quantity, 0);
+        }
+      }
+
+      const subtotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
+      const deliveryFee = pickup_store ? 0 : 4.99;
+      const serviceFee = 2.99;
+      const tax = subtotal * 0.0875;
+      const tip = subtotal * 0.18;
+      const grandTotal = subtotal + deliveryFee + serviceFee + tax + tip;
+      const store = pickup_store ? STORES.find(s => s.id === pickup_store) : null;
+
+      const itemList = cart.map(c => `${c.quantity}x ${c.name} ($${c.price})`).join(", ");
+
+      return {
+        content: [{
+          type: "text",
+          text: `Quick order ready for ${size} people: ${itemList}. Estimated total: $${grandTotal.toFixed(2)} (incl. tax, fees, 18% tip). ${store ? `Pickup at ${store.name}.` : "Delivery."} Say "place it" to confirm or "change" to adjust.`,
+        }],
+        structuredContent: {
+          view: "cart",
+          cartItems: cart,
+          total: subtotal,
+          quickOrder: { groupSize: size, estimatedGrandTotal: grandTotal, store: store || null, method: pickup_store ? "pickup" : "delivery" },
+        },
+      };
+    }
+  );
+
+  // ─── Tool: Suggest Store ──────────────────────────────────────────────
+  registerAppTool(
+    server,
+    "suggest_store",
+    {
+      title: "Suggest Best Store",
+      description:
+        "Recommends the best Pizzaz store for pickup based on rating, hours, and current time. Use this proactively before placing an order to offer pickup (which saves the $4.99 delivery fee). Also use when the user asks 'which store should I go to?' or 'where should I pick up?'.",
+      inputSchema: {
+        preference: z.enum(["best-rated", "latest-hours", "closest"]).optional()
+          .describe("How to rank stores (default: best-rated)"),
+      },
+      _meta: { ui: { resourceUri: WIDGET_URI } },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    },
+    async ({ preference }) => {
+      const pref = preference || "best-rated";
+      const ranked = [...STORES];
+
+      if (pref === "best-rated") ranked.sort((a, b) => b.rating - a.rating);
+      if (pref === "latest-hours") ranked.sort((a, b) => {
+        const hourVal = (h) => parseInt(h.split("–")[1]) || 0;
+        return hourVal(b.hours) - hourVal(a.hours);
+      });
+
+      const top = ranked[0];
+      const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
+      const savingsMsg = cartTotal > 0 ? ` Picking up saves you $4.99 delivery fee.` : "";
+
+      return {
+        content: [{
+          type: "text",
+          text: `Best pick: ${top.name} (${top.rating} stars) at ${top.address}, ${top.city}. Open ${top.hours}.${savingsMsg} Want to pick up here?`,
+        }],
+        structuredContent: {
+          view: "stores",
+          stores: STORES,
+          suggestion: { recommended: top, reason: pref, deliverySavings: 4.99 },
+        },
+      };
+    }
+  );
+
   // ─── Tool: Place Order ─────────────────────────────────────────────────
   registerAppTool(
     server,
@@ -285,7 +518,7 @@ function createPizzazServer() {
     {
       title: "Place Order",
       description:
-        "Completes the checkout and places the order for delivery. Use when the user confirms they want to order.",
+        "Completes the checkout and places the order for delivery or pickup. Use when the user confirms they want to order. Before placing, call suggest_store to recommend the best store for pickup if the user hasn't chosen one.",
       inputSchema: {
         store_id: z.string().optional().describe("Preferred store ID for pickup. Omit for delivery."),
         tip_percent: z.number().min(0).max(100).optional().describe("Tip percentage (default 18%)"),
@@ -293,9 +526,7 @@ function createPizzazServer() {
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ store_id, tip_percent }, extra) => {
-      const sessionId = extra?.sessionId || "default";
-      const cart = getCart(sessionId);
+    async ({ store_id, tip_percent }) => {
       if (cart.length === 0) {
         return {
           content: [{ type: "text", text: "Your cart is empty! Add some pizzas first." }],
@@ -311,9 +542,11 @@ function createPizzazServer() {
       const store = store_id ? STORES.find((s) => s.id === store_id) : null;
       const orderId = `PZZ-${Date.now().toString(36).toUpperCase()}`;
       const eta = store_id ? "15-20 min" : "30-40 min";
+      const orderItems = [...cart];
 
-      // Clear cart after order
-      carts.set(sessionId, []);
+      // Save order history and clear cart
+      lastOrder = { orderId, items: orderItems, subtotal, grandTotal, date: new Date().toISOString() };
+      cart.length = 0;
 
       return {
         content: [
@@ -325,7 +558,7 @@ function createPizzazServer() {
         structuredContent: {
           view: "confirmation",
           orderId,
-          items: cart,
+          items: orderItems,
           subtotal,
           deliveryFee,
           serviceFee,
@@ -345,56 +578,79 @@ function createPizzazServer() {
 
 // ─── HTTP Server ────────────────────────────────────────────────────────────
 const port = Number(process.env.PORT ?? 8787);
-const MCP_PATH = "/mcp";
+
+// Active SSE sessions: transportSessionId → SSEServerTransport
+const sseSessions = new Map();
+
+function setCors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "content-type");
+}
 
 const httpServer = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host ?? "localhost"}`);
 
   // CORS preflight
   if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "content-type",
-    });
-    res.end();
+    setCors(res);
+    res.writeHead(204).end();
     return;
   }
 
-  // MCP endpoint
-  if (url.pathname === MCP_PATH) {
-    // Only POST carries MCP JSON-RPC messages; GET without SSE accept is a probe
-    if (req.method === "GET") {
-      const accept = req.headers.accept || "";
-      if (!accept.includes("text/event-stream")) {
-        res.writeHead(200, {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        });
-        res.end(JSON.stringify({ status: "ok", app: "pizzaz-shop", mcp: true }));
-        return;
-      }
-    }
+  setCors(res);
 
-    if (req.method === "GET" || req.method === "POST") {
-      try {
-        const server = createPizzazServer();
-        const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: undefined,
-          enableJsonResponse: true,
-        });
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        await server.connect(transport);
-        await transport.handleRequest(req, res);
-      } catch (err) {
-        console.error("MCP error:", err);
-        if (!res.headersSent) res.writeHead(500).end("Internal Server Error");
-      }
-      return;
+  // ── SSE endpoint: GET /sse opens an event stream ─────────────────────────
+  if (url.pathname === "/sse" && req.method === "GET") {
+    try {
+      const server = createPizzazServer();
+      const transport = new SSEServerTransport("/messages", res);
+      sseSessions.set(transport.sessionId, transport);
+      res.on("close", () => sseSessions.delete(transport.sessionId));
+      await server.connect(transport);
+    } catch (err) {
+      console.error("SSE error:", err);
+      if (!res.headersSent) res.writeHead(500).end("Internal Server Error");
     }
+    return;
   }
 
-  // Health check
+  // ── SSE messages: POST /messages?sessionId=… ─────────────────────────────
+  if (url.pathname === "/messages" && req.method === "POST") {
+    const sessionId = url.searchParams.get("sessionId");
+    const transport = sseSessions.get(sessionId);
+    if (!transport) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unknown or expired session" }));
+      return;
+    }
+    try {
+      await transport.handlePostMessage(req, res);
+    } catch (err) {
+      console.error("SSE message error:", err);
+      if (!res.headersSent) res.writeHead(500).end("Internal Server Error");
+    }
+    return;
+  }
+
+  // ── Streamable HTTP: POST /mcp (kept for direct MCP clients) ─────────────
+  if (url.pathname === "/mcp" && req.method === "POST") {
+    try {
+      const server = createPizzazServer();
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        enableJsonResponse: true,
+      });
+      await server.connect(transport);
+      await transport.handleRequest(req, res);
+    } catch (err) {
+      console.error("MCP error:", err);
+      if (!res.headersSent) res.writeHead(500).end("Internal Server Error");
+    }
+    return;
+  }
+
+  // ── Health check ─────────────────────────────────────────────────────────
   if (url.pathname === "/" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok", app: "pizzaz-shop", version: "1.0.0" }));
@@ -407,5 +663,6 @@ const httpServer = createServer(async (req, res) => {
 httpServer.listen(port, "0.0.0.0", () => {
   console.log(`\n  🍕 Pizzaz Shop MCP server running!\n`);
   console.log(`  Local:    http://0.0.0.0:${port}`);
-  console.log(`  MCP:      http://0.0.0.0:${port}${MCP_PATH}\n`);
+  console.log(`  SSE:      http://0.0.0.0:${port}/sse`);
+  console.log(`  MCP:      http://0.0.0.0:${port}/mcp\n`);
 });
