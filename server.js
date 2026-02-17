@@ -362,21 +362,36 @@ const httpServer = createServer(async (req, res) => {
   }
 
   // MCP endpoint
-  if (url.pathname === MCP_PATH && (req.method === "GET" || req.method === "POST")) {
-    try {
-      const server = createPizzazServer();
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined,
-        enableJsonResponse: true,
-      });
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      await server.connect(transport);
-      await transport.handleRequest(req, res);
-    } catch (err) {
-      console.error("MCP error:", err);
-      if (!res.headersSent) res.writeHead(500).end("Internal Server Error");
+  if (url.pathname === MCP_PATH) {
+    // Only POST carries MCP JSON-RPC messages; GET without SSE accept is a probe
+    if (req.method === "GET") {
+      const accept = req.headers.accept || "";
+      if (!accept.includes("text/event-stream")) {
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        });
+        res.end(JSON.stringify({ status: "ok", app: "pizzaz-shop", mcp: true }));
+        return;
+      }
     }
-    return;
+
+    if (req.method === "GET" || req.method === "POST") {
+      try {
+        const server = createPizzazServer();
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined,
+          enableJsonResponse: true,
+        });
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        await server.connect(transport);
+        await transport.handleRequest(req, res);
+      } catch (err) {
+        console.error("MCP error:", err);
+        if (!res.headersSent) res.writeHead(500).end("Internal Server Error");
+      }
+      return;
+    }
   }
 
   // Health check
@@ -389,10 +404,8 @@ const httpServer = createServer(async (req, res) => {
   res.writeHead(404).end("Not Found");
 });
 
-httpServer.listen(port, () => {
+httpServer.listen(port, "0.0.0.0", () => {
   console.log(`\n  🍕 Pizzaz Shop MCP server running!\n`);
-  console.log(`  Local:    http://localhost:${port}`);
-  console.log(`  MCP:      http://localhost:${port}${MCP_PATH}`);
-  console.log(`\n  To connect to ChatGPT, tunnel with ngrok:`);
-  console.log(`  ngrok http ${port}\n`);
+  console.log(`  Local:    http://0.0.0.0:${port}`);
+  console.log(`  MCP:      http://0.0.0.0:${port}${MCP_PATH}\n`);
 });
