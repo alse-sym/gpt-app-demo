@@ -243,14 +243,54 @@ const REPAIR_CENTERS = [
   },
 ];
 
-// ─── In-memory Cart ──────────────────────────────────────────────────────────
-let cart = [];
-
-// ─── Policy History ──────────────────────────────────────────────────────────
-let lastPolicy = null;
-
 // ─── Server Factory ──────────────────────────────────────────────────────────
 const WIDGET_URI = "ui://widget/shieldhub.html";
+const SESSION_TTL_MS = 1000 * 60 * 60;
+const MAX_SESSION_STATES = 500;
+const sessionStateStore = new Map();
+
+function resolveSessionId(meta = {}) {
+  const raw =
+    meta?.["openai/session"] ??
+    meta?.sessionId ??
+    meta?.["x-openai-session-id"] ??
+    "anonymous";
+  return String(raw);
+}
+
+function getSessionState(meta = {}) {
+  const now = Date.now();
+  const sessionId = resolveSessionId(meta);
+  const existing = sessionStateStore.get(sessionId);
+  if (existing) {
+    existing.lastSeen = now;
+    return existing;
+  }
+
+  if (sessionStateStore.size >= MAX_SESSION_STATES) {
+    for (const [id, state] of sessionStateStore.entries()) {
+      if (now - state.lastSeen > SESSION_TTL_MS) {
+        sessionStateStore.delete(id);
+      }
+    }
+    if (sessionStateStore.size >= MAX_SESSION_STATES) {
+      const oldestSessionId = sessionStateStore.keys().next().value;
+      sessionStateStore.delete(oldestSessionId);
+    }
+  }
+
+  const created = { cart: [], lastPolicy: null, lastSeen: now };
+  sessionStateStore.set(sessionId, created);
+  return created;
+}
+
+function getMonthlyTotal(cartItems) {
+  return cartItems.reduce((sum, item) => sum + item.monthlyPrice * item.quantity, 0);
+}
+
+function cloneCart(cartItems) {
+  return cartItems.map((item) => ({ ...item }));
+}
 
 function createShieldHubServer() {
   const server = new McpServer({ name: "shieldhub", version: "1.0.0" });
@@ -261,6 +301,15 @@ function createShieldHubServer() {
         uri: WIDGET_URI,
         mimeType: RESOURCE_MIME_TYPE,
         text: widgetHtml,
+        _meta: {
+          "openai/widgetDescription":
+            "Interactive ShieldHub storefront for protection plans, promotions, repair centers, and checkout.",
+          "openai/widgetPrefersBorder": true,
+          "openai/widgetCSP": {
+            connect_domains: [],
+            resource_domains: [],
+          },
+        },
       },
     ],
   }));
@@ -275,7 +324,7 @@ function createShieldHubServer() {
         "Shows available device protection plans with pricing, coverage details, and ratings. Use when the user wants to see what protection options are available. After showing plans, offer to recommend a plan based on their device and needs.",
       inputSchema: {
         filter: z
-          .enum(["all", "smartphone", "tablet", "laptop", "wearable", "popular", "premium", "basic"])
+          .enum(["all", "smartphone", "tablet", "laptop", "wearable", "popular", "premium", "basic", "standard"])
           .optional()
           .describe("Filter plans by device type, tier, or popularity"),
       },
@@ -293,7 +342,11 @@ function createShieldHubServer() {
       } else {
         const deviceMap = { smartphone: "smartphone", tablet: "tablet", laptop: "laptop", wearable: "smartwatch" };
         const deviceType = deviceMap[filter] || filter;
-        items = PLANS.filter((p) => p.deviceTypes.includes(deviceType) || p.deviceTypes.includes("earbuds"));
+        if (filter === "wearable") {
+          items = PLANS.filter((p) => p.deviceTypes.includes("smartwatch") || p.deviceTypes.includes("earbuds"));
+        } else {
+          items = PLANS.filter((p) => p.deviceTypes.includes(deviceType));
+        }
       }
       return {
         content: [
@@ -357,10 +410,16 @@ function createShieldHubServer() {
         plan_id: z.string().describe("The plan ID to add (e.g. 'standard-guard', 'premium-shield')"),
         quantity: z.number().int().min(1).max(10).optional().describe("Number of plans/devices to cover (default 1)"),
       },
-      _meta: { ui: { resourceUri: WIDGET_URI } },
+      _meta: {
+        ui: { resourceUri: WIDGET_URI },
+        "openai/toolInvocation/invoking": "Updating your cart...",
+        "openai/toolInvocation/invoked": "Cart updated.",
+      },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ plan_id, quantity }) => {
+    async ({ plan_id, quantity }, { _meta } = {}) => {
+      const state = getSessionState(_meta);
+      const cart = state.cart;
       const plan = PLANS.find((p) => p.id === plan_id);
       if (!plan) {
         return {
@@ -375,7 +434,7 @@ function createShieldHubServer() {
       } else {
         cart.push({ ...plan, quantity: qty });
       }
-      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
+      const monthlyTotal = getMonthlyTotal(cart);
       return {
         content: [
           {
@@ -383,7 +442,61 @@ function createShieldHubServer() {
             text: `Added ${qty}x ${plan.name} to cart. Monthly total: $${monthlyTotal.toFixed(2)}/mo.`,
           },
         ],
-        structuredContent: { view: "cart", cartItems: cart, monthlyTotal },
+        structuredContent: { view: "cart", cartItems: cloneCart(cart), monthlyTotal },
+      };
+    }
+  );
+
+  // ─── Tool: Update Cart Quantity ────────────────────────────────────────────
+  registerAppTool(
+    server,
+    "update_cart_quantity",
+    {
+      title: "Update Cart Quantity",
+      description:
+        "Sets the quantity for a plan already in the cart. Use quantity 0 to remove the plan completely.",
+      inputSchema: {
+        plan_id: z.string().describe("The plan ID to update"),
+        quantity: z.number().int().min(0).max(10).describe("Target quantity (0 removes item)"),
+      },
+      _meta: {
+        ui: { resourceUri: WIDGET_URI },
+        "openai/toolInvocation/invoking": "Updating your cart...",
+        "openai/toolInvocation/invoked": "Cart updated.",
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    async ({ plan_id, quantity }, { _meta } = {}) => {
+      const state = getSessionState(_meta);
+      const cart = state.cart;
+      const index = cart.findIndex((item) => item.id === plan_id);
+      if (index < 0) {
+        const monthlyTotal = getMonthlyTotal(cart);
+        return {
+          content: [{ type: "text", text: `Plan "${plan_id}" is not in your cart.` }],
+          structuredContent: { view: "cart", cartItems: cloneCart(cart), monthlyTotal },
+        };
+      }
+
+      const item = cart[index];
+      if (quantity === 0) {
+        cart.splice(index, 1);
+      } else {
+        item.quantity = quantity;
+      }
+
+      const monthlyTotal = getMonthlyTotal(cart);
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              quantity === 0
+                ? `Removed ${item.name} from your cart.`
+                : `Updated ${item.name} to ${quantity} device${quantity !== 1 ? "s" : ""}.`,
+          },
+        ],
+        structuredContent: { view: "cart", cartItems: cloneCart(cart), monthlyTotal },
       };
     }
   );
@@ -400,8 +513,10 @@ function createShieldHubServer() {
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
-    async () => {
-      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
+    async (_args, { _meta } = {}) => {
+      const state = getSessionState(_meta);
+      const cart = state.cart;
+      const monthlyTotal = getMonthlyTotal(cart);
       return {
         content: [
           {
@@ -411,7 +526,7 @@ function createShieldHubServer() {
               : `You have ${cart.reduce((s, c) => s + c.quantity, 0)} plan(s) in your cart. Monthly total: $${monthlyTotal.toFixed(2)}/mo.`,
           },
         ],
-        structuredContent: { view: "cart", cartItems: cart, monthlyTotal },
+        structuredContent: { view: "cart", cartItems: cloneCart(cart), monthlyTotal },
       };
     }
   );
@@ -498,8 +613,10 @@ function createShieldHubServer() {
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
-    async () => {
-      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
+    async (_args, { _meta } = {}) => {
+      const state = getSessionState(_meta);
+      const cart = state.cart;
+      const monthlyTotal = getMonthlyTotal(cart);
       const totalDevices = cart.reduce((sum, c) => sum + c.quantity, 0);
 
       if (cart.length === 0) {
@@ -566,10 +683,16 @@ function createShieldHubServer() {
         billing: z.enum(["monthly", "annual"]).optional()
           .describe("Billing preference (default monthly)"),
       },
-      _meta: { ui: { resourceUri: WIDGET_URI } },
+      _meta: {
+        ui: { resourceUri: WIDGET_URI },
+        "openai/toolInvocation/invoking": "Building your protection bundle...",
+        "openai/toolInvocation/invoked": "Protection bundle ready.",
+      },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ device_count, device_types, budget, billing }) => {
+    async ({ device_count, device_types, budget, billing }, { _meta } = {}) => {
+      const state = getSessionState(_meta);
+      const cart = state.cart;
       const count = device_count || 1;
       const types = device_types || ["smartphone"];
       const billingCycle = billing || "monthly";
@@ -595,7 +718,7 @@ function createShieldHubServer() {
         }
       }
 
-      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
+      const monthlyTotal = getMonthlyTotal(cart);
       const annualTotal = monthlyTotal * 10;
       const displayTotal = billingCycle === "annual" ? annualTotal : monthlyTotal;
       const planList = cart.map(c => `${c.quantity}x ${c.name} ($${c.monthlyPrice.toFixed(2)}/mo)`).join(", ");
@@ -607,7 +730,7 @@ function createShieldHubServer() {
         }],
         structuredContent: {
           view: "cart",
-          cartItems: cart,
+          cartItems: cloneCart(cart),
           monthlyTotal,
           quickProtect: { deviceCount: count, billing: billingCycle, annualTotal },
         },
@@ -677,10 +800,16 @@ function createShieldHubServer() {
       inputSchema: {
         billing: z.enum(["monthly", "annual"]).optional().describe("Billing cycle (default monthly)"),
       },
-      _meta: { ui: { resourceUri: WIDGET_URI } },
+      _meta: {
+        ui: { resourceUri: WIDGET_URI },
+        "openai/toolInvocation/invoking": "Activating protection...",
+        "openai/toolInvocation/invoked": "Protection activated.",
+      },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ billing }) => {
+    async ({ billing }, { _meta } = {}) => {
+      const state = getSessionState(_meta);
+      const cart = state.cart;
       if (cart.length === 0) {
         return {
           content: [{ type: "text", text: "Your cart is empty! Add a protection plan first." }],
@@ -688,7 +817,7 @@ function createShieldHubServer() {
         };
       }
       const billingCycle = billing || "monthly";
-      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
+      const monthlyTotal = getMonthlyTotal(cart);
       const annualTotal = monthlyTotal * 10;
       const displayTotal = billingCycle === "annual" ? annualTotal : monthlyTotal;
       const totalDevices = cart.reduce((sum, c) => sum + c.quantity, 0);
@@ -696,7 +825,7 @@ function createShieldHubServer() {
       const startDate = new Date().toISOString().split("T")[0];
       const coverageItems = [...cart];
 
-      lastPolicy = { policyId, items: coverageItems, monthlyTotal, date: new Date().toISOString() };
+      state.lastPolicy = { policyId, items: coverageItems, monthlyTotal, date: new Date().toISOString() };
       cart.length = 0;
 
       return {
@@ -725,7 +854,7 @@ function createShieldHubServer() {
 }
 
 // ─── HTTP Server ─────────────────────────────────────────────────────────────
-const port = Number(process.env.PORT ?? 8787);
+const port = Number(process.env.PORT ?? 8080);
 
 const sseSessions = new Map();
 
@@ -795,7 +924,26 @@ const httpServer = createServer(async (req, res) => {
 
   if (url.pathname === "/" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", app: "shieldhub", version: "1.0.0" }));
+    res.end(
+      JSON.stringify({
+        status: "ok",
+        app: "shieldhub",
+        version: "1.0.0",
+        endpoints: { mcp: "/mcp", sse: "/sse", messages: "/messages", health: "/health", widget: "/widget" },
+      })
+    );
+    return;
+  }
+
+  if (url.pathname === "/health" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok", sessions: sessionStateStore.size }));
+    return;
+  }
+
+  if (url.pathname === "/widget" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(widgetHtml);
     return;
   }
 

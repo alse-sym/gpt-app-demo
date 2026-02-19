@@ -34,7 +34,10 @@
   body {
     font-family: "Söhne", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
     color: var(--text);
-    background: var(--bg);
+    background:
+      radial-gradient(120% 90% at 0% 0%, rgba(16,163,127,0.2) 0%, rgba(16,163,127,0) 45%),
+      radial-gradient(100% 80% at 100% 0%, rgba(91,155,245,0.14) 0%, rgba(91,155,245,0) 42%),
+      var(--bg);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
@@ -54,6 +57,48 @@
   .header-text h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   .header-text p { font-size: 12px; color: var(--text-muted); }
 
+  .global-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 10px 16px 2px;
+  }
+  .nav-btn {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 6px;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .nav-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .nav-btn.active {
+    color: var(--text);
+    border-color: rgba(16,163,127,0.45);
+    background: linear-gradient(180deg, rgba(16,163,127,0.2), rgba(16,163,127,0.08));
+  }
+
+  .hero-card {
+    margin: 12px 16px 0;
+    border-radius: var(--radius);
+    border: 1px solid rgba(16,163,127,0.35);
+    background: linear-gradient(160deg, rgba(16,163,127,0.23), rgba(16,163,127,0.04) 60%, rgba(91,155,245,0.08) 100%);
+    padding: 14px;
+  }
+  .hero-kicker {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #96e4ce;
+    font-weight: 700;
+  }
+  .hero-title { margin-top: 4px; font-size: 17px; line-height: 1.25; font-weight: 700; }
+  .hero-desc { margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+  .hero-actions { margin-top: 12px; display: flex; gap: 8px; }
+
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 8px 14px; border-radius: var(--radius-xs); font-size: 13px;
@@ -62,6 +107,12 @@
   }
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary {
+    background: rgba(0,0,0,0.22);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-secondary:hover { background: rgba(0,0,0,0.3); }
   .btn-sm { padding: 6px 12px; font-size: 12px; }
   .btn-block { width: 100%; }
 
@@ -387,9 +438,10 @@
 <script>
 let rpcId = 0;
 const pendingRequests = new Map();
-let bridgeReady = null;
 let bridgeReadyResolve = null;
-bridgeReady = new Promise((resolve) => { bridgeReadyResolve = resolve; });
+const bridgeReady = new Promise((resolve) => { bridgeReadyResolve = resolve; });
+const isStandalone = window.parent === window;
+let lastRenderedData = null;
 
 const rpcRequest = (method, params) =>
   new Promise((resolve, reject) => {
@@ -401,7 +453,62 @@ const rpcRequest = (method, params) =>
 const rpcNotify = (method, params) =>
   window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function deepSanitize(value) {
+  if (typeof value === "string") return escapeHtml(value);
+  if (Array.isArray(value)) return value.map((item) => deepSanitize(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, deepSanitize(item)]));
+  }
+  return value;
+}
+
+function saveWidgetState(data) {
+  if (!window.openai || typeof window.openai.setWidgetState !== "function") return;
+  const state = { lastData: data };
+  Promise.resolve(window.openai.setWidgetState(state)).catch(() => {});
+}
+
+function restoreWidgetState() {
+  const restored = window.openai?.widgetState?.lastData;
+  if (!restored) return false;
+  render(restored, { persist: false });
+  return true;
+}
+
+function notifyHostLayout() {
+  if (!window.openai) return;
+  const candidates = [
+    window.openai.notifyIntrinsicHeight,
+    window.openai.notifyIntrinsicSize,
+    window.openai.setFrameHeight,
+  ].filter((fn) => typeof fn === "function");
+  if (candidates.length === 0) return;
+  requestAnimationFrame(() => {
+    for (const fn of candidates) {
+      try {
+        fn.call(window.openai);
+      } catch {
+        // Ignore host bridge differences across clients.
+      }
+    }
+  });
+}
+
 async function initializeBridge() {
+  if (window.openai?.callTool || isStandalone) {
+    bridgeReadyResolve();
+    return;
+  }
+
   try {
     await rpcRequest("ui/initialize", {
       appInfo: { name: "shieldhub", version: "1.0.0" },
@@ -409,15 +516,28 @@ async function initializeBridge() {
       protocolVersion: "2026-01-26",
     });
     rpcNotify("ui/notifications/initialized", {});
-    bridgeReadyResolve();
   } catch (e) {
     console.error("Bridge init failed:", e);
+  } finally {
     bridgeReadyResolve();
   }
 }
 
-async function callTool(name, args) {
+async function callTool(name, args = {}) {
   await bridgeReady;
+
+  if (window.openai?.callTool) {
+    const response = await window.openai.callTool(name, args);
+    if (response?.structuredContent) {
+      render(response.structuredContent);
+    }
+    return response;
+  }
+
+  if (isStandalone) {
+    throw new Error("Tool bridge unavailable outside ChatGPT.");
+  }
+
   const response = await rpcRequest("tools/call", { name, arguments: args });
   if (response?.structuredContent) {
     render(response.structuredContent);
@@ -485,22 +605,72 @@ const promoIcons = {
 
 const app = document.getElementById("app");
 
-function render(data) {
-  const { view } = data;
+function renderGlobalNav(active) {
+  const tabs = [
+    { id: "plans", label: "Plans", tool: "browse_plans", args: { filter: "all" } },
+    { id: "promotions", label: "Deals", tool: "view_promotions", args: {} },
+    { id: "centers", label: "Repairs", tool: "find_repair_centers", args: {} },
+    { id: "cart", label: "Cart", tool: "view_cart", args: {} },
+  ];
+  return `
+    <div class="global-nav">
+      ${tabs.map((tab) => `
+        <button class="nav-btn ${tab.id === active ? "active" : ""}" data-nav-tool="${tab.tool}" data-nav-args='${JSON.stringify(tab.args)}'>
+          ${tab.label}
+        </button>
+      `).join("")}
+    </div>
+  `;
+}
+
+function bindGlobalNav() {
+  app.querySelectorAll("[data-nav-tool]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const args = JSON.parse(btn.dataset.navArgs || "{}");
+      callTool(btn.dataset.navTool, args).catch((err) => {
+        console.error("Nav action failed:", err);
+      });
+    });
+  });
+}
+
+function render(data, options = {}) {
+  const safeData = deepSanitize(data || {});
+  const { persist = true } = options;
+  const { view } = safeData;
+
   switch (view) {
-    case "plans": renderPlans(data); break;
-    case "promotions": renderPromotions(data); break;
-    case "centers": renderCenters(data); break;
-    case "cart": renderCart(data); break;
-    case "confirmation": renderConfirmation(data); break;
-    case "error": renderError(data); break;
+    case "plans": renderPlans(safeData); break;
+    case "promotions": renderPromotions(safeData); break;
+    case "centers": renderCenters(safeData); break;
+    case "cart": renderCart(safeData); break;
+    case "confirmation": renderConfirmation(safeData); break;
+    case "error": renderError(safeData); break;
     default: renderError({ message: "Unknown view" });
+  }
+
+  bindGlobalNav();
+  notifyHostLayout();
+
+  lastRenderedData = safeData;
+  if (persist) {
+    saveWidgetState(safeData);
   }
 }
 
 function renderPlans(data) {
   const { items, filter } = data;
-  const filters = ["all", "smartphone", "tablet", "laptop", "wearable", "popular", "premium"];
+  const filters = ["all", "popular", "smartphone", "tablet", "laptop", "wearable", "standard", "premium"];
+  const filterLabel = {
+    all: "All Plans",
+    popular: "Popular",
+    smartphone: "Phones",
+    tablet: "Tablets",
+    laptop: "Laptops",
+    wearable: "Wearables",
+    standard: "Standard",
+    premium: "Premium",
+  };
 
   app.innerHTML = `
     <div class="header">
@@ -510,10 +680,20 @@ function renderPlans(data) {
         <p>${items.length} plan${items.length !== 1 ? 's' : ''} available</p>
       </div>
     </div>
+    ${renderGlobalNav("plans")}
+    <div class="hero-card slide-up">
+      <div class="hero-kicker">ShieldHub Advisor</div>
+      <div class="hero-title">Protect every device before accidents happen.</div>
+      <div class="hero-desc">Build coverage in under a minute. Quick Protect creates a ready-to-purchase bundle for you.</div>
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-sm" id="quickProtectBtn">Quick Protect</button>
+        <button class="btn btn-secondary btn-sm" id="optimizeBtn">Find Best Value</button>
+      </div>
+    </div>
     <div class="filters">
       ${filters.map(f => `
         <button class="filter-chip ${f === filter ? 'active' : ''}" data-filter="${f}">
-          ${f === 'all' ? 'All Plans' : f.charAt(0).toUpperCase() + f.slice(1)}
+          ${filterLabel[f] || f}
         </button>
       `).join('')}
     </div>
@@ -572,6 +752,17 @@ function renderPlans(data) {
       setTimeout(() => { btn.textContent = 'Add to Cart'; btn.style.background = ''; }, 1200);
     });
   });
+  document.getElementById("quickProtectBtn")?.addEventListener("click", () => {
+    callTool("quick_protect", {
+      device_count: 1,
+      device_types: ["smartphone"],
+      budget: "medium",
+      billing: "monthly",
+    });
+  });
+  document.getElementById("optimizeBtn")?.addEventListener("click", () => {
+    callTool("find_best_coverage", {});
+  });
 }
 
 function renderPromotions(data) {
@@ -584,6 +775,7 @@ function renderPromotions(data) {
         <p>${promotions.length} offers available</p>
       </div>
     </div>
+    ${renderGlobalNav("promotions")}
     <div class="carousel-wrapper">
       <div class="carousel-track" id="carouselTrack">
         ${promotions.map((p, i) => `
@@ -626,6 +818,7 @@ function renderCenters(data) {
         <p>${centers.length} authorized locations</p>
       </div>
     </div>
+    ${renderGlobalNav("centers")}
     <div class="centers-section">
       <div class="center-map-placeholder slide-up">
         <div class="map-grid"></div>
@@ -664,12 +857,17 @@ function renderCart(data) {
         <div class="header-logo">${icons.cart}</div>
         <div class="header-text"><h1>Your Cart</h1><p>0 plans</p></div>
       </div>
+      ${renderGlobalNav("cart")}
       <div class="cart-empty slide-up">
         <div class="cart-empty-icon">${icons.shield}</div>
         <p>Your cart is empty</p>
         <p style="font-size:11px;margin-top:4px;color:var(--text-muted)">Ask me to show protection plans to get started!</p>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px" id="browsePlansBtn">Browse Plans</button>
       </div>
     `;
+    document.getElementById("browsePlansBtn")?.addEventListener("click", () => {
+      callTool("browse_plans", { filter: "all" });
+    });
     return;
   }
   const planCount = cartItems.reduce((s, c) => s + c.quantity, 0);
@@ -679,6 +877,7 @@ function renderCart(data) {
       <div class="header-logo">${icons.cart}</div>
       <div class="header-text"><h1>Your Cart</h1><p>${planCount} plan${planCount !== 1 ? 's' : ''}</p></div>
     </div>
+    ${renderGlobalNav("cart")}
     <div class="cart-section">
       ${cartItems.map((item, i) => `
         <div class="cart-item fade-in" style="animation-delay: ${i * 0.04}s">
@@ -688,9 +887,19 @@ function renderCart(data) {
             <div class="cart-item-desc">${item.coverage.slice(0, 3).join(', ')}</div>
           </div>
           <div class="cart-item-qty">
-            <button class="qty-btn" data-qty-minus="${item.id}">${icons.minus}</button>
+            <button
+              class="qty-btn"
+              data-qty-plan="${item.id}"
+              data-qty-value="${Math.max(item.quantity - 1, 0)}"
+              aria-label="Decrease quantity"
+            >${icons.minus}</button>
             <span class="qty-num">${item.quantity}</span>
-            <button class="qty-btn" data-qty-plus="${item.id}">${icons.plus}</button>
+            <button
+              class="qty-btn"
+              data-qty-plan="${item.id}"
+              data-qty-value="${Math.min(item.quantity + 1, 10)}"
+              aria-label="Increase quantity"
+            >${icons.plus}</button>
           </div>
           <div class="cart-item-price">$${(item.monthlyPrice * item.quantity).toFixed(2)}<span>/mo</span></div>
         </div>
@@ -706,6 +915,15 @@ function renderCart(data) {
     </div>
   `;
   document.getElementById('purchaseBtn')?.addEventListener('click', () => callTool('purchase_protection', { billing: 'monthly' }));
+  app.querySelectorAll("[data-qty-plan]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const quantity = Number(btn.dataset.qtyValue || "0");
+      callTool("update_cart_quantity", {
+        plan_id: btn.dataset.qtyPlan,
+        quantity,
+      });
+    });
+  });
 }
 
 function renderConfirmation(data) {
@@ -714,6 +932,7 @@ function renderConfirmation(data) {
   const displayLabel = billing === 'annual' ? '/yr' : '/mo';
   app.innerHTML = `
     <div class="confirmation slide-up">
+      ${renderGlobalNav("cart")}
       <div class="confirm-icon">${icons.check}</div>
       <div class="confirm-title">Protection Activated!</div>
       <div class="confirm-policy-id">Policy #${policyId}</div>
@@ -738,10 +957,51 @@ function renderConfirmation(data) {
 }
 
 function renderError(data) {
-  app.innerHTML = `<div class="error-view"><p style="font-size:20px;margin-bottom:8px">⚠️</p><p>${data.message || 'Something went wrong'}</p></div>`;
+  app.innerHTML = `
+    ${renderGlobalNav("")}
+    <div class="error-view">
+      <p style="font-size:20px;margin-bottom:8px">⚠️</p>
+      <p>${data.message || "Something went wrong"}</p>
+    </div>
+  `;
 }
 
-initializeBridge();
+function renderStandaloneState() {
+  app.innerHTML = `
+    <div class="header">
+      <div class="header-logo">${icons.shield}</div>
+      <div class="header-text">
+        <h1>ShieldHub Widget</h1>
+        <p>Preview mode</p>
+      </div>
+    </div>
+    <div class="hero-card slide-up">
+      <div class="hero-kicker">Bridge Required</div>
+      <div class="hero-title">Open this widget inside ChatGPT to run tools.</div>
+      <div class="hero-desc">Local standalone mode can render the UI shell, but tool calls require the ChatGPT Apps bridge.</div>
+    </div>
+  `;
+}
+
+async function bootstrap() {
+  await initializeBridge();
+
+  if (restoreWidgetState()) return;
+
+  if (isStandalone && !window.openai?.callTool) {
+    renderStandaloneState();
+    return;
+  }
+
+  try {
+    await callTool("browse_plans", { filter: "all" });
+  } catch (err) {
+    console.error("Initial browse_plans call failed:", err);
+    renderError({ message: "Unable to load plans right now. Ask ChatGPT to run Browse Protection Plans." });
+  }
+}
+
+bootstrap();
 </script>
 </body>
 </html>
