@@ -42,7 +42,7 @@
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
-  .app { max-width: 100%; min-height: 100vh; }
+  .app { max-width: 100%; min-height: 0; }
 
   .header {
     display: flex; align-items: center; gap: 12px;
@@ -441,7 +441,6 @@ const pendingRequests = new Map();
 let bridgeReadyResolve = null;
 const bridgeReady = new Promise((resolve) => { bridgeReadyResolve = resolve; });
 const isStandalone = window.parent === window;
-let lastRenderedData = null;
 
 const rpcRequest = (method, params) =>
   new Promise((resolve, reject) => {
@@ -501,6 +500,15 @@ function notifyHostLayout() {
       }
     }
   });
+  setTimeout(() => {
+    for (const fn of candidates) {
+      try {
+        fn.call(window.openai);
+      } catch {
+        // Ignore host bridge differences across clients.
+      }
+    }
+  }, 60);
 }
 
 async function initializeBridge() {
@@ -652,7 +660,6 @@ function render(data, options = {}) {
   bindGlobalNav();
   notifyHostLayout();
 
-  lastRenderedData = safeData;
   if (persist) {
     saveWidgetState(safeData);
   }
@@ -931,8 +938,8 @@ function renderConfirmation(data) {
   const displayTotal = billing === 'annual' ? annualTotal : monthlyTotal;
   const displayLabel = billing === 'annual' ? '/yr' : '/mo';
   app.innerHTML = `
+    ${renderGlobalNav("cart")}
     <div class="confirmation slide-up">
-      ${renderGlobalNav("cart")}
       <div class="confirm-icon">${icons.check}</div>
       <div class="confirm-title">Protection Activated!</div>
       <div class="confirm-policy-id">Policy #${policyId}</div>
