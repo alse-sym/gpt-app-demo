@@ -14,560 +14,708 @@ import {
 import { z } from "zod";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const shopHtml = readFileSync(join(__dirname, "public", "shop-widget.html"), "utf8");
+const widgetHtml = readFileSync(join(__dirname, "public", "shop-widget.html"), "utf8");
 
-// ─── Menu Data ──────────────────────────────────────────────────────────────
-const MENU = [
+// ─── Protection Plans ────────────────────────────────────────────────────────
+const PLANS = [
   {
-    id: "margherita",
-    name: "Margherita Classica",
-    price: 14.99,
-    description: "San Marzano tomatoes, fresh mozzarella, basil, EVOO",
-    tags: ["vegetarian"],
-    image: "https://persistent.oaistatic.com/pizzaz/pizzaz-1.png",
-    rating: 4.8,
-  },
-  {
-    id: "pepperoni",
-    name: "Pepperoni Inferno",
-    price: 16.99,
-    description: "Double pepperoni, mozzarella, spicy honey drizzle",
-    tags: ["spicy", "popular"],
-    image: "https://persistent.oaistatic.com/pizzaz/pizzaz-2.png",
-    rating: 4.9,
-  },
-  {
-    id: "truffle-mushroom",
-    name: "Truffle Mushroom",
-    price: 19.99,
-    description: "Wild mushroom medley, truffle cream, fontina, thyme",
-    tags: ["vegetarian", "premium"],
-    image: "https://persistent.oaistatic.com/pizzaz/pizzaz-3.png",
-    rating: 4.7,
-  },
-  {
-    id: "bbq-chicken",
-    name: "BBQ Chicken Ranch",
-    price: 17.99,
-    description: "Grilled chicken, BBQ sauce, red onion, cilantro, ranch drizzle",
-    tags: ["popular"],
-    image: "https://persistent.oaistatic.com/pizzaz/pizzaz-4.png",
-    rating: 4.6,
-  },
-  {
-    id: "mediterranean",
-    name: "Mediterranean Garden",
-    price: 16.99,
-    description: "Kalamata olives, artichokes, sun-dried tomatoes, feta, arugula",
-    tags: ["vegetarian", "vegan-option"],
-    image: "https://persistent.oaistatic.com/pizzaz/pizzaz-5.png",
-    rating: 4.5,
-  },
-  {
-    id: "meat-lovers",
-    name: "Meat Lovers Supreme",
-    price: 19.99,
-    description: "Pepperoni, Italian sausage, bacon, ham, ground beef",
-    tags: ["popular", "premium"],
-    image: "https://persistent.oaistatic.com/pizzaz/pizzaz-6.png",
-    rating: 4.8,
-  },
-  {
-    id: "hawaiian",
-    name: "Hawaiian Sunset",
-    price: 15.99,
-    description: "Smoked ham, caramelized pineapple, jalapeño, mozzarella",
-    tags: ["spicy"],
-    image: "https://persistent.oaistatic.com/pizzaz/pizzaz-1.png",
+    id: "essential-shield",
+    name: "Essential Shield",
+    monthlyPrice: 4.99,
+    description: "Screen crack & display damage coverage for smartphones",
+    coverage: ["Screen damage", "Display malfunction"],
+    deviceTypes: ["smartphone"],
+    deductible: 49,
+    claimLimit: 2,
     rating: 4.3,
+    popular: false,
+    tier: "basic",
+    image: "https://images.unsplash.com/photo-1556656793-08538906a9f8?w=400&h=280&fit=crop",
   },
   {
-    id: "white-pie",
-    name: "Bianca White Pie",
-    price: 17.99,
-    description: "Ricotta, mozzarella, parmesan, garlic, lemon zest",
-    tags: ["vegetarian"],
-    image: "https://persistent.oaistatic.com/pizzaz/pizzaz-2.png",
+    id: "basic-protect",
+    name: "Basic Protect",
+    monthlyPrice: 7.99,
+    description: "Accidental damage coverage including drops, spills, and cracked screens",
+    coverage: ["Accidental damage", "Screen damage", "Liquid damage"],
+    deviceTypes: ["smartphone", "tablet"],
+    deductible: 29,
+    claimLimit: 3,
+    rating: 4.5,
+    popular: false,
+    tier: "basic",
+    image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=280&fit=crop",
+  },
+  {
+    id: "standard-guard",
+    name: "Standard Guard",
+    monthlyPrice: 12.99,
+    description: "Comprehensive damage and theft protection with fast replacement",
+    coverage: ["Accidental damage", "Theft", "Screen damage", "Liquid damage", "Power surge"],
+    deviceTypes: ["smartphone", "tablet"],
+    deductible: 0,
+    claimLimit: 4,
     rating: 4.7,
+    popular: true,
+    tier: "standard",
+    image: "https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=400&h=280&fit=crop",
+  },
+  {
+    id: "premium-shield",
+    name: "Premium Shield",
+    monthlyPrice: 17.99,
+    description: "All-risk coverage including loss, worldwide protection, and same-day replacement",
+    coverage: ["Accidental damage", "Theft", "Loss", "Screen damage", "Liquid damage", "Power surge", "Worldwide coverage"],
+    deviceTypes: ["smartphone", "tablet", "smartwatch"],
+    deductible: 0,
+    claimLimit: 6,
+    rating: 4.9,
+    popular: true,
+    tier: "premium",
+    image: "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=400&h=280&fit=crop",
+  },
+  {
+    id: "family-bundle",
+    name: "Family Bundle",
+    monthlyPrice: 29.99,
+    description: "Protect up to 5 devices under one plan — phones, tablets, and wearables",
+    coverage: ["Accidental damage", "Theft", "Screen damage", "Liquid damage", "Multi-device"],
+    deviceTypes: ["smartphone", "tablet", "smartwatch", "earbuds"],
+    deductible: 0,
+    claimLimit: 8,
+    rating: 4.8,
+    popular: true,
+    tier: "premium",
+    image: "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&h=280&fit=crop",
+  },
+  {
+    id: "business-pro",
+    name: "Business Pro",
+    monthlyPrice: 24.99,
+    description: "Fleet device management with priority support and bulk replacement",
+    coverage: ["Accidental damage", "Theft", "Loss", "Data recovery", "Priority replacement"],
+    deviceTypes: ["smartphone", "tablet", "laptop"],
+    deductible: 0,
+    claimLimit: 10,
+    rating: 4.6,
+    popular: false,
+    tier: "premium",
+    image: "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=400&h=280&fit=crop",
+  },
+  {
+    id: "wearable-care",
+    name: "Wearable Care",
+    monthlyPrice: 3.99,
+    description: "Smartwatch and earbuds protection — water, impact, and battery coverage",
+    coverage: ["Accidental damage", "Water damage", "Battery failure"],
+    deviceTypes: ["smartwatch", "earbuds"],
+    deductible: 19,
+    claimLimit: 2,
+    rating: 4.4,
+    popular: false,
+    tier: "basic",
+    image: "https://images.unsplash.com/photo-1546868871-af0de0ae72be?w=400&h=280&fit=crop",
+  },
+  {
+    id: "laptop-fortress",
+    name: "Laptop Fortress",
+    monthlyPrice: 14.99,
+    description: "Full laptop coverage — accidental damage, theft, keyboard, and battery",
+    coverage: ["Accidental damage", "Theft", "Keyboard failure", "Battery replacement", "Screen damage"],
+    deviceTypes: ["laptop"],
+    deductible: 0,
+    claimLimit: 4,
+    rating: 4.7,
+    popular: false,
+    tier: "standard",
+    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=280&fit=crop",
   },
 ];
 
-const SPECIALS = [
-  { id: "lunch-combo", name: "Lunch Combo", description: "Any slice + drink + side", price: 9.99, originalPrice: 14.99, badge: "Best Value", image: "https://persistent.oaistatic.com/pizzaz/pizzaz-3.png" },
-  { id: "family-deal", name: "Family Deal", description: "2 large pizzas + garlic bread + 2L soda", price: 34.99, originalPrice: 49.99, badge: "Most Popular", image: "https://persistent.oaistatic.com/pizzaz/pizzaz-4.png" },
-  { id: "date-night", name: "Date Night", description: "1 premium pizza + salad + dessert + wine", price: 39.99, originalPrice: 55.99, badge: "New", image: "https://persistent.oaistatic.com/pizzaz/pizzaz-5.png" },
-  { id: "party-pack", name: "Party Pack", description: "4 large pizzas + 4 sides + 4L soda", price: 69.99, originalPrice: 89.99, badge: "Save 22%", image: "https://persistent.oaistatic.com/pizzaz/pizzaz-6.png" },
+const PROMOTIONS = [
+  {
+    id: "new-device-bundle",
+    name: "New Device Bundle",
+    description: "Get 30% off your first 3 months when you protect a new device",
+    monthlyPrice: 9.09,
+    originalPrice: 12.99,
+    badge: "Best Value",
+    savings: "30%",
+    image: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&h=280&fit=crop",
+  },
+  {
+    id: "family-pack",
+    name: "Family Protection Pack",
+    description: "Cover 3+ devices and save 25% — one plan for the whole family",
+    monthlyPrice: 22.49,
+    originalPrice: 29.99,
+    badge: "Most Popular",
+    savings: "25%",
+    image: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&h=280&fit=crop",
+  },
+  {
+    id: "trade-in-shield",
+    name: "Trade-In Shield",
+    description: "Free first month of protection when you trade in your old device",
+    monthlyPrice: 0,
+    originalPrice: 12.99,
+    badge: "Free Month",
+    savings: "$12.99",
+    image: "https://images.unsplash.com/photo-1556656793-08538906a9f8?w=400&h=280&fit=crop",
+  },
+  {
+    id: "annual-saver",
+    name: "Annual Saver",
+    description: "Pay yearly and get 2 months free — best long-term value",
+    monthlyPrice: 10.82,
+    originalPrice: 12.99,
+    badge: "Save 17%",
+    savings: "2 months free",
+    image: "https://images.unsplash.com/photo-1563986768609-322da13575f2?w=400&h=280&fit=crop",
+  },
 ];
 
-const STORES = [
-  { id: "north-beach", name: "Pizzaz North Beach", address: "412 Columbus Ave", city: "North Beach, SF", coords: [-122.4098, 37.8001], hours: "11am–11pm", rating: 4.8, phone: "(415) 555-0101" },
-  { id: "mission", name: "Pizzaz Mission", address: "2847 Mission St", city: "Mission, SF", coords: [-122.4255, 37.7613], hours: "11am–12am", rating: 4.6, phone: "(415) 555-0102" },
-  { id: "soma", name: "Pizzaz SoMa", address: "680 Folsom St", city: "SoMa, SF", coords: [-122.4135, 37.7805], hours: "10am–10pm", rating: 4.5, phone: "(415) 555-0103" },
-  { id: "nob-hill", name: "Pizzaz Nob Hill", address: "1540 Hyde St", city: "Nob Hill, SF", coords: [-122.4123, 37.7899], hours: "11am–11pm", rating: 4.7, phone: "(415) 555-0104" },
-  { id: "alamo-square", name: "Pizzaz Alamo Square", address: "701 Divisadero St", city: "Alamo Square, SF", coords: [-122.4388, 37.7775], hours: "11am–10pm", rating: 4.4, phone: "(415) 555-0105" },
+const REPAIR_CENTERS = [
+  {
+    id: "downtown-hub",
+    name: "ShieldHub Downtown Service Center",
+    address: "450 Market St",
+    city: "Financial District, SF",
+    coords: [-122.3984, 37.7910],
+    hours: "9am–7pm",
+    rating: 4.9,
+    phone: "(415) 555-2001",
+    services: ["Screen repair", "Battery replacement", "Water damage", "Data recovery"],
+    turnaround: "Same day",
+    certified: true,
+  },
+  {
+    id: "mission-tech",
+    name: "Mission Tech Repairs",
+    address: "2920 Mission St",
+    city: "Mission, SF",
+    coords: [-122.4255, 37.7513],
+    hours: "10am–8pm",
+    rating: 4.7,
+    phone: "(415) 555-2002",
+    services: ["Screen repair", "Battery replacement", "Charging port"],
+    turnaround: "Same day",
+    certified: true,
+  },
+  {
+    id: "soma-express",
+    name: "SoMa Express Fix",
+    address: "725 Folsom St",
+    city: "SoMa, SF",
+    coords: [-122.4035, 37.7815],
+    hours: "8am–9pm",
+    rating: 4.6,
+    phone: "(415) 555-2003",
+    services: ["Screen repair", "Battery replacement", "Water damage", "Laptop repair"],
+    turnaround: "1–2 hours",
+    certified: true,
+  },
+  {
+    id: "marina-devices",
+    name: "Marina Device Care",
+    address: "2190 Chestnut St",
+    city: "Marina, SF",
+    coords: [-122.4383, 37.8002],
+    hours: "10am–6pm",
+    rating: 4.5,
+    phone: "(415) 555-2004",
+    services: ["Screen repair", "Battery replacement", "Wearable repair"],
+    turnaround: "Next day",
+    certified: false,
+  },
+  {
+    id: "richmond-repair",
+    name: "Richmond Repair Lab",
+    address: "315 Clement St",
+    city: "Inner Richmond, SF",
+    coords: [-122.4625, 37.7831],
+    hours: "9am–7pm",
+    rating: 4.4,
+    phone: "(415) 555-2005",
+    services: ["Screen repair", "Battery replacement", "Water damage", "Data recovery", "Laptop repair"],
+    turnaround: "Same day",
+    certified: true,
+  },
 ];
 
-// ─── In-memory Cart (shared — each ChatGPT tool call may use a different
-//     MCP session, so we use a single global cart for this demo) ─────────────
+// ─── In-memory Cart ──────────────────────────────────────────────────────────
 let cart = [];
 
-// ─── Order History (for reorder support) ────────────────────────────────────
-let lastOrder = null;
+// ─── Policy History ──────────────────────────────────────────────────────────
+let lastPolicy = null;
 
-// ─── Server Factory ─────────────────────────────────────────────────────────
-const WIDGET_URI = "ui://widget/pizzaz-shop.html";
+// ─── Server Factory ──────────────────────────────────────────────────────────
+const WIDGET_URI = "ui://widget/shieldhub.html";
 
-function createPizzazServer() {
-  const server = new McpServer({ name: "pizzaz-shop", version: "1.0.0" });
+function createShieldHubServer() {
+  const server = new McpServer({ name: "shieldhub", version: "1.0.0" });
 
-  // Register the shop widget as a resource
-  registerAppResource(server, "pizzaz-shop", WIDGET_URI, {}, async () => ({
+  registerAppResource(server, "shieldhub", WIDGET_URI, {}, async () => ({
     contents: [
       {
         uri: WIDGET_URI,
         mimeType: RESOURCE_MIME_TYPE,
-        text: shopHtml,
+        text: widgetHtml,
       },
     ],
   }));
 
-  // ─── Tool: Browse Menu ──────────────────────────────────────────────────
+  // ─── Tool: Browse Plans ────────────────────────────────────────────────────
   registerAppTool(
     server,
-    "browse_menu",
+    "browse_plans",
     {
-      title: "Browse Pizza Menu",
+      title: "Browse Protection Plans",
       description:
-        "Shows the full Pizzaz pizza menu with prices, descriptions, and ratings. Use when the user wants to see what pizzas are available. After showing the menu, offer to recommend a pizza based on their preferences or add one to the cart.",
+        "Shows available device protection plans with pricing, coverage details, and ratings. Use when the user wants to see what protection options are available. After showing plans, offer to recommend a plan based on their device and needs.",
       inputSchema: {
         filter: z
-          .enum(["all", "vegetarian", "spicy", "popular", "premium"])
+          .enum(["all", "smartphone", "tablet", "laptop", "wearable", "popular", "premium", "basic"])
           .optional()
-          .describe("Filter menu by category"),
+          .describe("Filter plans by device type, tier, or popularity"),
       },
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
     async ({ filter }) => {
-      const items =
-        !filter || filter === "all"
-          ? MENU
-          : MENU.filter((item) => item.tags.includes(filter));
+      let items;
+      if (!filter || filter === "all") {
+        items = PLANS;
+      } else if (filter === "popular") {
+        items = PLANS.filter((p) => p.popular);
+      } else if (filter === "premium" || filter === "basic" || filter === "standard") {
+        items = PLANS.filter((p) => p.tier === filter);
+      } else {
+        const deviceMap = { smartphone: "smartphone", tablet: "tablet", laptop: "laptop", wearable: "smartwatch" };
+        const deviceType = deviceMap[filter] || filter;
+        items = PLANS.filter((p) => p.deviceTypes.includes(deviceType) || p.deviceTypes.includes("earbuds"));
+      }
       return {
         content: [
           {
             type: "text",
-            text: `Showing ${items.length} pizza${items.length !== 1 ? "s" : ""} on the menu${filter && filter !== "all" ? ` (filtered: ${filter})` : ""}.`,
+            text: `Showing ${items.length} protection plan${items.length !== 1 ? "s" : ""}${filter && filter !== "all" ? ` (filtered: ${filter})` : ""}.`,
           },
         ],
-        structuredContent: { view: "menu", items, filter: filter || "all" },
+        structuredContent: { view: "plans", items, filter: filter || "all" },
       };
     }
   );
 
-  // ─── Tool: View Specials ────────────────────────────────────────────────
+  // ─── Tool: View Promotions ─────────────────────────────────────────────────
   registerAppTool(
     server,
-    "view_specials",
+    "view_promotions",
     {
-      title: "View Today's Specials",
+      title: "View Current Promotions",
       description:
-        "Shows today's deals and combo specials with discounted prices. Use when the user asks about deals, specials, or wants to save money. Proactively suggest the best deal based on group size or budget.",
+        "Shows current promotional offers, bundle discounts, and seasonal deals. Use when the user asks about discounts, savings, or wants to get the best price on protection.",
       inputSchema: {},
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
     async () => ({
-      content: [{ type: "text", text: `We have ${SPECIALS.length} specials today!` }],
-      structuredContent: { view: "specials", specials: SPECIALS },
+      content: [{ type: "text", text: `We have ${PROMOTIONS.length} active promotions right now!` }],
+      structuredContent: { view: "promotions", promotions: PROMOTIONS },
     })
   );
 
-  // ─── Tool: Find Nearby Stores ───────────────────────────────────────────
+  // ─── Tool: Find Repair Centers ─────────────────────────────────────────────
   registerAppTool(
     server,
-    "find_nearby_stores",
+    "find_repair_centers",
     {
-      title: "Find Nearby Stores",
+      title: "Find Repair Centers",
       description:
-        "Shows Pizzaz store locations on a map with addresses, hours, and ratings. Use when the user wants to find a store, see locations, or get directions.",
+        "Shows authorized repair and service center locations with ratings, services offered, and turnaround times. Use when the user needs a repair, wants to file a claim, or needs to find the nearest service center.",
       inputSchema: {},
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
     async () => ({
       content: [
-        { type: "text", text: `Found ${STORES.length} Pizzaz locations near you.` },
+        { type: "text", text: `Found ${REPAIR_CENTERS.length} authorized repair centers near you.` },
       ],
-      structuredContent: { view: "stores", stores: STORES },
+      structuredContent: { view: "centers", centers: REPAIR_CENTERS },
     })
   );
 
-  // ─── Tool: Add to Cart ─────────────────────────────────────────────────
+  // ─── Tool: Add to Cart ─────────────────────────────────────────────────────
   registerAppTool(
     server,
     "add_to_cart",
     {
-      title: "Add to Cart",
+      title: "Add Plan to Cart",
       description:
-        "Adds a pizza to the shopping cart. Use when the user wants to order a specific pizza. After adding, always call find_best_deal to check if a combo or special would save the user money.",
+        "Adds a protection plan to the shopping cart. Use when the user wants to purchase a specific plan. After adding, suggest checking find_best_coverage for potential bundle savings.",
       inputSchema: {
-        item_id: z.string().describe("The pizza ID to add (e.g. 'margherita', 'pepperoni')"),
-        quantity: z.number().int().min(1).max(10).optional().describe("How many to add (default 1)"),
+        plan_id: z.string().describe("The plan ID to add (e.g. 'standard-guard', 'premium-shield')"),
+        quantity: z.number().int().min(1).max(10).optional().describe("Number of plans/devices to cover (default 1)"),
       },
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ item_id, quantity }) => {
-      const pizza = MENU.find((p) => p.id === item_id);
-      if (!pizza) {
+    async ({ plan_id, quantity }) => {
+      const plan = PLANS.find((p) => p.id === plan_id);
+      if (!plan) {
         return {
-          content: [{ type: "text", text: `Pizza "${item_id}" not found on the menu.` }],
-          structuredContent: { view: "error", message: `Pizza "${item_id}" not found.` },
+          content: [{ type: "text", text: `Plan "${plan_id}" not found.` }],
+          structuredContent: { view: "error", message: `Plan "${plan_id}" not found.` },
         };
       }
       const qty = quantity || 1;
-      const existing = cart.find((c) => c.id === item_id);
+      const existing = cart.find((c) => c.id === plan_id);
       if (existing) {
         existing.quantity += qty;
       } else {
-        cart.push({ ...pizza, quantity: qty });
+        cart.push({ ...plan, quantity: qty });
       }
-      const total = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
+      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
       return {
         content: [
           {
             type: "text",
-            text: `Added ${qty}x ${pizza.name} to cart. Cart total: $${total.toFixed(2)}.`,
+            text: `Added ${qty}x ${plan.name} to cart. Monthly total: $${monthlyTotal.toFixed(2)}/mo.`,
           },
         ],
-        structuredContent: { view: "cart", cartItems: cart, total },
+        structuredContent: { view: "cart", cartItems: cart, monthlyTotal },
       };
     }
   );
 
-  // ─── Tool: View Cart ───────────────────────────────────────────────────
+  // ─── Tool: View Cart ───────────────────────────────────────────────────────
   registerAppTool(
     server,
     "view_cart",
     {
       title: "View Cart",
       description:
-        "Shows the current shopping cart with all items, quantities, and total price. Use when the user wants to see their order or review the cart.",
+        "Shows the current cart with selected protection plans, quantities, and monthly/annual cost breakdown. Use when the user wants to review their selections.",
       inputSchema: {},
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
     async () => {
-      const total = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
+      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
       return {
         content: [
           {
             type: "text",
             text: cart.length === 0
               ? "Your cart is empty."
-              : `You have ${cart.reduce((s, c) => s + c.quantity, 0)} item(s) in your cart. Total: $${total.toFixed(2)}.`,
+              : `You have ${cart.reduce((s, c) => s + c.quantity, 0)} plan(s) in your cart. Monthly total: $${monthlyTotal.toFixed(2)}/mo.`,
           },
         ],
-        structuredContent: { view: "cart", cartItems: cart, total },
+        structuredContent: { view: "cart", cartItems: cart, monthlyTotal },
       };
     }
   );
 
-  // ─── Tool: Recommend Pizza ──────────────────────────────────────────────
+  // ─── Tool: Recommend Plan ──────────────────────────────────────────────────
   registerAppTool(
     server,
-    "recommend_pizza",
+    "recommend_plan",
     {
-      title: "Get Pizza Recommendation",
+      title: "Get Plan Recommendation",
       description:
-        "Returns a personalized pizza recommendation based on the user's preferences. Use this proactively when the user says they're hungry, can't decide, wants a suggestion, or describes what they like (e.g. 'something spicy', 'I'm vegetarian', 'feed my family'). After recommending, offer to add the pizza to the cart immediately.",
+        "Returns a personalized protection plan recommendation based on the user's device type, usage patterns, and budget. Use proactively when the user describes their device, asks what plan is best, or mentions concerns about damage/theft.",
       inputSchema: {
-        preferences: z.array(z.enum(["vegetarian", "spicy", "popular", "premium", "budget", "top-rated"])).optional()
-          .describe("User taste preferences — infer from conversation context"),
-        group_size: z.number().int().min(1).max(20).optional()
-          .describe("How many people eating (default 1)"),
-        budget: z.number().optional()
-          .describe("Max budget in dollars — helps narrow the pick"),
+        device_type: z.enum(["smartphone", "tablet", "laptop", "smartwatch", "earbuds", "multiple"]).optional()
+          .describe("The type of device to protect"),
+        concerns: z.array(z.enum(["drops", "theft", "water", "loss", "screen", "battery", "all-risk"])).optional()
+          .describe("What the user is worried about — infer from conversation"),
+        budget: z.enum(["low", "medium", "high"]).optional()
+          .describe("Budget preference — low (<$8), medium ($8-$18), high ($18+)"),
+        device_count: z.number().int().min(1).max(10).optional()
+          .describe("Number of devices to protect (default 1)"),
       },
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
-    async ({ preferences, group_size, budget }) => {
-      let candidates = [...MENU];
-      const prefs = preferences || [];
-      const size = group_size || 1;
+    async ({ device_type, concerns, budget, device_count }) => {
+      let candidates = [...PLANS];
+      const count = device_count || 1;
 
-      if (prefs.includes("vegetarian")) candidates = candidates.filter(p => p.tags.includes("vegetarian"));
-      if (prefs.includes("spicy")) candidates = candidates.filter(p => p.tags.includes("spicy"));
-      if (prefs.includes("popular")) candidates = candidates.filter(p => p.tags.includes("popular"));
-      if (prefs.includes("premium")) candidates = candidates.filter(p => p.tags.includes("premium"));
-      if (prefs.includes("budget")) candidates = candidates.filter(p => p.price <= 16.99);
-      if (budget) candidates = candidates.filter(p => p.price * size <= budget);
-      if (prefs.includes("top-rated")) candidates.sort((a, b) => b.rating - a.rating);
+      if (device_type && device_type !== "multiple") {
+        candidates = candidates.filter(p => p.deviceTypes.includes(device_type));
+      }
+      if (device_type === "multiple" || count >= 3) {
+        candidates = candidates.filter(p => p.id === "family-bundle" || p.id === "business-pro" || p.deviceTypes.length >= 3);
+      }
 
-      if (candidates.length === 0) candidates = [...MENU];
+      if (budget === "low") candidates = candidates.filter(p => p.monthlyPrice <= 8);
+      if (budget === "medium") candidates = candidates.filter(p => p.monthlyPrice > 8 && p.monthlyPrice <= 18);
+      if (budget === "high") candidates = candidates.filter(p => p.monthlyPrice > 18 || p.tier === "premium");
+
+      if (concerns && concerns.length > 0) {
+        const concernMap = { drops: "Accidental damage", theft: "Theft", water: "Liquid damage", loss: "Loss", screen: "Screen damage", battery: "Battery", "all-risk": "Loss" };
+        const needed = concerns.map(c => concernMap[c]).filter(Boolean);
+        candidates = candidates.filter(p => needed.every(n => p.coverage.some(c => c.toLowerCase().includes(n.toLowerCase()))));
+      }
+
+      if (candidates.length === 0) candidates = [...PLANS];
       candidates.sort((a, b) => b.rating - a.rating);
-
       const pick = candidates[0];
-      const quantity = Math.max(1, Math.ceil(size / 2));
-      const totalEstimate = pick.price * quantity;
 
-      const matchingDeal = size >= 4 ? SPECIALS.find(s => s.id === "party-pack")
-        : size >= 2 ? SPECIALS.find(s => s.id === "family-deal")
-        : null;
+      const annualCost = pick.monthlyPrice * 12 * count;
+      const matchingPromo = count >= 3 ? PROMOTIONS.find(p => p.id === "family-pack")
+        : PROMOTIONS.find(p => p.id === "new-device-bundle");
 
-      let dealHint = "";
-      if (matchingDeal) {
-        dealHint = ` Consider the ${matchingDeal.name} ($${matchingDeal.price}) — saves $${(matchingDeal.originalPrice - matchingDeal.price).toFixed(2)} vs ordering separately.`;
+      let promoHint = "";
+      if (matchingPromo) {
+        promoHint = ` Check out the "${matchingPromo.name}" promotion to save even more!`;
       }
 
       return {
         content: [{
           type: "text",
-          text: `Recommendation: ${quantity}x ${pick.name} ($${pick.price} each, ${pick.rating} stars) — "${pick.description}". Estimated total: $${totalEstimate.toFixed(2)}.${dealHint} Say "add it" to put it in your cart.`,
+          text: `Recommendation: ${pick.name} at $${pick.monthlyPrice.toFixed(2)}/mo (${pick.rating} stars) — ${pick.description}. Covers: ${pick.coverage.join(", ")}. ${count > 1 ? `For ${count} devices: $${(pick.monthlyPrice * count).toFixed(2)}/mo.` : `Annual cost: $${annualCost.toFixed(2)}.`}${promoHint} Say "add it" to add this plan to your cart.`,
         }],
         structuredContent: {
-          view: "menu",
+          view: "plans",
           items: [pick],
           filter: "recommendation",
-          recommendation: { pick, quantity, totalEstimate, deal: matchingDeal || undefined },
+          recommendation: { pick, quantity: count, annualCost, promo: matchingPromo || undefined },
         },
       };
     }
   );
 
-  // ─── Tool: Find Best Deal ─────────────────────────────────────────────
+  // ─── Tool: Find Best Coverage ──────────────────────────────────────────────
   registerAppTool(
     server,
-    "find_best_deal",
+    "find_best_coverage",
     {
-      title: "Find Best Deal",
+      title: "Find Best Coverage",
       description:
-        "Analyzes the current cart and checks if a combo deal or special would save the user money. Call this automatically after items are added to the cart. Also use when the user asks about saving money or getting the best price.",
+        "Analyzes the current cart and checks if a bundle, upgrade, or promotion would provide better coverage or savings. Call this automatically after plans are added. Also use when the user asks about optimizing their protection.",
       inputSchema: {},
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
     async () => {
-      const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
-      const cartQty = cart.reduce((sum, c) => sum + c.quantity, 0);
+      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
+      const totalDevices = cart.reduce((sum, c) => sum + c.quantity, 0);
 
       if (cart.length === 0) {
         return {
-          content: [{ type: "text", text: "Cart is empty — add some pizzas first, then I can find the best deal." }],
-          structuredContent: { view: "specials", specials: SPECIALS, dealAnalysis: { cartTotal: 0, bestDeal: null, savings: 0 } },
+          content: [{ type: "text", text: "Cart is empty — add a protection plan first, then I can find the best coverage." }],
+          structuredContent: { view: "promotions", promotions: PROMOTIONS, analysis: { monthlyTotal: 0, bestOption: null, savings: 0 } },
         };
       }
 
-      const applicableDeals = SPECIALS.map(special => {
-        let savings = 0;
-        let applicable = false;
-        if (special.id === "lunch-combo" && cartQty === 1) { applicable = true; savings = cartTotal - special.price; }
-        if (special.id === "family-deal" && cartQty >= 2) { applicable = true; savings = cartTotal - special.price; }
-        if (special.id === "date-night" && cartQty >= 1 && cart.some(c => c.tags.includes("premium"))) { applicable = true; savings = cartTotal - special.price; }
-        if (special.id === "party-pack" && cartQty >= 3) { applicable = true; savings = cartTotal - special.price; }
-        return { ...special, applicable, savings };
-      }).filter(d => d.applicable && d.savings > 0).sort((a, b) => b.savings - a.savings);
+      const suggestions = [];
 
-      const bestDeal = applicableDeals[0] || null;
+      if (totalDevices >= 3 && !cart.some(c => c.id === "family-bundle")) {
+        const familyPlan = PLANS.find(p => p.id === "family-bundle");
+        const familySavings = monthlyTotal - familyPlan.monthlyPrice;
+        if (familySavings > 0) {
+          suggestions.push({ type: "bundle", plan: familyPlan, savings: familySavings, message: `Switch to Family Bundle and save $${familySavings.toFixed(2)}/mo` });
+        }
+      }
+
+      const hasBasicOnly = cart.some(c => c.tier === "basic");
+      if (hasBasicOnly) {
+        const upgrade = PLANS.find(p => p.id === "standard-guard");
+        suggestions.push({ type: "upgrade", plan: upgrade, savings: 0, message: `Upgrade to ${upgrade.name} for $0 deductible and theft coverage` });
+      }
+
+      const annualSaver = PROMOTIONS.find(p => p.id === "annual-saver");
+      const annualSavings = monthlyTotal * 2;
+      suggestions.push({ type: "promo", promo: annualSaver, savings: annualSavings, message: `Pay annually and save $${annualSavings.toFixed(2)} (2 months free)` });
+
+      suggestions.sort((a, b) => b.savings - a.savings);
+      const best = suggestions[0];
 
       return {
         content: [{
           type: "text",
-          text: bestDeal
-            ? `Your cart is $${cartTotal.toFixed(2)}. Switch to the ${bestDeal.name} ($${bestDeal.price}) and save $${bestDeal.savings.toFixed(2)}! ${bestDeal.description}.`
-            : `Your cart total is $${cartTotal.toFixed(2)}. No better combo deal available — you're already getting a good price.`,
+          text: best
+            ? `Your current monthly total is $${monthlyTotal.toFixed(2)}/mo. ${best.message}. ${suggestions.length > 1 ? `${suggestions.length - 1} more suggestion(s) available.` : ""}`
+            : `Your monthly total is $${monthlyTotal.toFixed(2)}/mo. You've got solid coverage!`,
         }],
         structuredContent: {
-          view: "specials",
-          specials: SPECIALS,
-          dealAnalysis: { cartTotal, cartQty, bestDeal, allDeals: applicableDeals },
+          view: "promotions",
+          promotions: PROMOTIONS,
+          analysis: { monthlyTotal, totalDevices, suggestions, bestOption: best },
         },
       };
     }
   );
 
-  // ─── Tool: Quick Order ────────────────────────────────────────────────
+  // ─── Tool: Quick Protect ───────────────────────────────────────────────────
   registerAppTool(
     server,
-    "quick_order",
+    "quick_protect",
     {
-      title: "Quick Order",
+      title: "Quick Protect",
       description:
-        "One-shot ordering: builds a full cart based on group size, preferences, and budget, then shows a summary ready to confirm. Use when the user says something like 'order pizza for 4 people', 'surprise me', 'I'm hungry just order something', or gives a budget. This replaces the need to browse, add to cart, and checkout separately.",
+        "One-shot protection: builds a complete cart based on the number of devices, types, and budget, then shows a summary ready to confirm. Use when the user says 'protect all my devices', 'I need coverage for my family', or gives a budget.",
       inputSchema: {
-        group_size: z.number().int().min(1).max(20).optional()
-          .describe("Number of people to feed (default 1)"),
-        preferences: z.array(z.enum(["vegetarian", "spicy", "popular", "premium", "budget", "top-rated", "mixed"])).optional()
-          .describe("Taste preferences — 'mixed' means a variety of styles"),
-        budget: z.number().optional()
-          .describe("Max total budget in dollars"),
-        pickup_store: z.string().optional()
-          .describe("Store ID for pickup, omit for delivery"),
+        device_count: z.number().int().min(1).max(10).optional()
+          .describe("Number of devices to protect (default 1)"),
+        device_types: z.array(z.enum(["smartphone", "tablet", "laptop", "smartwatch", "earbuds"])).optional()
+          .describe("Types of devices to protect"),
+        budget: z.enum(["low", "medium", "high"]).optional()
+          .describe("Budget preference"),
+        billing: z.enum(["monthly", "annual"]).optional()
+          .describe("Billing preference (default monthly)"),
       },
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ group_size, preferences, budget, pickup_store }) => {
-      const size = group_size || 1;
-      const prefs = preferences || ["popular", "top-rated"];
-      const pizzasNeeded = Math.max(1, Math.ceil(size / 2));
-
-      let candidates = [...MENU];
-      if (prefs.includes("vegetarian")) candidates = candidates.filter(p => p.tags.includes("vegetarian"));
-      if (prefs.includes("spicy")) candidates = candidates.filter(p => p.tags.includes("spicy"));
-      if (prefs.includes("budget")) candidates = candidates.filter(p => p.price <= 16.99);
-      if (prefs.includes("premium")) candidates = candidates.filter(p => p.tags.includes("premium"));
-
-      if (candidates.length === 0) candidates = [...MENU];
-      candidates.sort((a, b) => b.rating - a.rating);
-
-      if (prefs.includes("mixed")) {
-        const shuffled = candidates.sort(() => Math.random() - 0.5);
-        candidates = shuffled;
-      }
-
-      const selected = candidates.slice(0, pizzasNeeded);
+    async ({ device_count, device_types, budget, billing }) => {
+      const count = device_count || 1;
+      const types = device_types || ["smartphone"];
+      const billingCycle = billing || "monthly";
 
       cart.length = 0;
-      for (const pizza of selected) {
-        cart.push({ ...pizza, quantity: 1 });
-      }
 
-      if (budget) {
-        let total = cart.reduce((s, c) => s + c.price * c.quantity, 0);
-        while (total > budget && cart.length > 1) {
-          cart.pop();
-          total = cart.reduce((s, c) => s + c.price * c.quantity, 0);
+      if (count >= 3) {
+        const familyPlan = PLANS.find(p => p.id === "family-bundle");
+        cart.push({ ...familyPlan, quantity: 1 });
+      } else {
+        for (const dtype of types) {
+          let candidates = PLANS.filter(p => p.deviceTypes.includes(dtype));
+          if (budget === "low") candidates = candidates.filter(p => p.monthlyPrice <= 8);
+          else if (budget === "medium") candidates = candidates.filter(p => p.monthlyPrice <= 15);
+          if (candidates.length === 0) candidates = PLANS.filter(p => p.deviceTypes.includes(dtype));
+          candidates.sort((a, b) => b.rating - a.rating);
+          const best = candidates[0];
+          if (best) {
+            const existing = cart.find(c => c.id === best.id);
+            if (existing) existing.quantity += 1;
+            else cart.push({ ...best, quantity: 1 });
+          }
         }
       }
 
-      const subtotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
-      const deliveryFee = pickup_store ? 0 : 4.99;
-      const serviceFee = 2.99;
-      const tax = subtotal * 0.0875;
-      const tip = subtotal * 0.18;
-      const grandTotal = subtotal + deliveryFee + serviceFee + tax + tip;
-      const store = pickup_store ? STORES.find(s => s.id === pickup_store) : null;
-
-      const itemList = cart.map(c => `${c.quantity}x ${c.name} ($${c.price})`).join(", ");
+      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
+      const annualTotal = monthlyTotal * 10;
+      const displayTotal = billingCycle === "annual" ? annualTotal : monthlyTotal;
+      const planList = cart.map(c => `${c.quantity}x ${c.name} ($${c.monthlyPrice.toFixed(2)}/mo)`).join(", ");
 
       return {
         content: [{
           type: "text",
-          text: `Quick order ready for ${size} people: ${itemList}. Estimated total: $${grandTotal.toFixed(2)} (incl. tax, fees, 18% tip). ${store ? `Pickup at ${store.name}.` : "Delivery."} Say "place it" to confirm or "change" to adjust.`,
+          text: `Quick protection ready for ${count} device(s): ${planList}. ${billingCycle === "annual" ? `Annual total: $${annualTotal.toFixed(2)}/yr (2 months free).` : `Monthly total: $${monthlyTotal.toFixed(2)}/mo.`} Say "purchase" to activate coverage or "change" to adjust.`,
         }],
         structuredContent: {
           view: "cart",
           cartItems: cart,
-          total: subtotal,
-          quickOrder: { groupSize: size, estimatedGrandTotal: grandTotal, store: store || null, method: pickup_store ? "pickup" : "delivery" },
+          monthlyTotal,
+          quickProtect: { deviceCount: count, billing: billingCycle, annualTotal },
         },
       };
     }
   );
 
-  // ─── Tool: Suggest Store ──────────────────────────────────────────────
+  // ─── Tool: Suggest Repair Center ───────────────────────────────────────────
   registerAppTool(
     server,
-    "suggest_store",
+    "suggest_repair_center",
     {
-      title: "Suggest Best Store",
+      title: "Suggest Best Repair Center",
       description:
-        "Recommends the best Pizzaz store for pickup based on rating, hours, and current time. Use this proactively before placing an order to offer pickup (which saves the $4.99 delivery fee). Also use when the user asks 'which store should I go to?' or 'where should I pick up?'.",
+        "Recommends the best authorized repair center based on rating, services, and turnaround time. Use when the user needs a repair or asks where to get their device fixed.",
       inputSchema: {
-        preference: z.enum(["best-rated", "latest-hours", "closest"]).optional()
-          .describe("How to rank stores (default: best-rated)"),
+        service_needed: z.enum(["screen", "battery", "water-damage", "data-recovery", "laptop", "any"]).optional()
+          .describe("Type of repair service needed (default: any)"),
+        preference: z.enum(["best-rated", "fastest", "most-services"]).optional()
+          .describe("How to rank centers (default: best-rated)"),
       },
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
-    async ({ preference }) => {
+    async ({ service_needed, preference }) => {
       const pref = preference || "best-rated";
-      const ranked = [...STORES];
+      const service = service_needed || "any";
 
-      if (pref === "best-rated") ranked.sort((a, b) => b.rating - a.rating);
-      if (pref === "latest-hours") ranked.sort((a, b) => {
-        const hourVal = (h) => parseInt(h.split("–")[1]) || 0;
-        return hourVal(b.hours) - hourVal(a.hours);
-      });
+      let candidates = [...REPAIR_CENTERS];
 
-      const top = ranked[0];
-      const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
-      const savingsMsg = cartTotal > 0 ? ` Picking up saves you $4.99 delivery fee.` : "";
+      if (service !== "any") {
+        const serviceMap = { screen: "Screen repair", battery: "Battery replacement", "water-damage": "Water damage", "data-recovery": "Data recovery", laptop: "Laptop repair" };
+        const needed = serviceMap[service];
+        if (needed) candidates = candidates.filter(c => c.services.includes(needed));
+      }
+
+      if (pref === "best-rated") candidates.sort((a, b) => b.rating - a.rating);
+      if (pref === "fastest") candidates.sort((a, b) => a.turnaround.localeCompare(b.turnaround));
+      if (pref === "most-services") candidates.sort((a, b) => b.services.length - a.services.length);
+
+      if (candidates.length === 0) candidates = [...REPAIR_CENTERS];
+
+      const top = candidates[0];
 
       return {
         content: [{
           type: "text",
-          text: `Best pick: ${top.name} (${top.rating} stars) at ${top.address}, ${top.city}. Open ${top.hours}.${savingsMsg} Want to pick up here?`,
+          text: `Best match: ${top.name} (${top.rating} stars) at ${top.address}, ${top.city}. Turnaround: ${top.turnaround}. Services: ${top.services.join(", ")}. ${top.certified ? "Certified repair center." : ""} Want to schedule a visit?`,
         }],
         structuredContent: {
-          view: "stores",
-          stores: STORES,
-          suggestion: { recommended: top, reason: pref, deliverySavings: 4.99 },
+          view: "centers",
+          centers: REPAIR_CENTERS,
+          suggestion: { recommended: top, reason: pref },
         },
       };
     }
   );
 
-  // ─── Tool: Place Order ─────────────────────────────────────────────────
+  // ─── Tool: Purchase Protection ─────────────────────────────────────────────
   registerAppTool(
     server,
-    "place_order",
+    "purchase_protection",
     {
-      title: "Place Order",
+      title: "Purchase Protection",
       description:
-        "Completes the checkout and places the order for delivery or pickup. Use when the user confirms they want to order. Before placing, call suggest_store to recommend the best store for pickup if the user hasn't chosen one.",
+        "Completes the purchase and activates device protection coverage. Use when the user confirms they want to buy. Before purchasing, offer to check find_best_coverage for potential savings.",
       inputSchema: {
-        store_id: z.string().optional().describe("Preferred store ID for pickup. Omit for delivery."),
-        tip_percent: z.number().min(0).max(100).optional().describe("Tip percentage (default 18%)"),
+        billing: z.enum(["monthly", "annual"]).optional().describe("Billing cycle (default monthly)"),
       },
       _meta: { ui: { resourceUri: WIDGET_URI } },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ store_id, tip_percent }) => {
+    async ({ billing }) => {
       if (cart.length === 0) {
         return {
-          content: [{ type: "text", text: "Your cart is empty! Add some pizzas first." }],
+          content: [{ type: "text", text: "Your cart is empty! Add a protection plan first." }],
           structuredContent: { view: "error", message: "Cart is empty." },
         };
       }
-      const subtotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
-      const deliveryFee = store_id ? 0 : 4.99;
-      const serviceFee = 2.99;
-      const tax = subtotal * 0.0875;
-      const tip = subtotal * ((tip_percent ?? 18) / 100);
-      const grandTotal = subtotal + deliveryFee + serviceFee + tax + tip;
-      const store = store_id ? STORES.find((s) => s.id === store_id) : null;
-      const orderId = `PZZ-${Date.now().toString(36).toUpperCase()}`;
-      const eta = store_id ? "15-20 min" : "30-40 min";
-      const orderItems = [...cart];
+      const billingCycle = billing || "monthly";
+      const monthlyTotal = cart.reduce((sum, c) => sum + c.monthlyPrice * c.quantity, 0);
+      const annualTotal = monthlyTotal * 10;
+      const displayTotal = billingCycle === "annual" ? annualTotal : monthlyTotal;
+      const totalDevices = cart.reduce((sum, c) => sum + c.quantity, 0);
+      const policyId = `SH-${Date.now().toString(36).toUpperCase()}`;
+      const startDate = new Date().toISOString().split("T")[0];
+      const coverageItems = [...cart];
 
-      // Save order history and clear cart
-      lastOrder = { orderId, items: orderItems, subtotal, grandTotal, date: new Date().toISOString() };
+      lastPolicy = { policyId, items: coverageItems, monthlyTotal, date: new Date().toISOString() };
       cart.length = 0;
 
       return {
         content: [
           {
             type: "text",
-            text: `Order ${orderId} placed! ${store ? `Pickup at ${store.name}` : "Delivery"} — ETA ${eta}. Grand total: $${grandTotal.toFixed(2)}.`,
+            text: `Policy ${policyId} activated! ${totalDevices} device(s) now protected. ${billingCycle === "annual" ? `Annual cost: $${annualTotal.toFixed(2)}/yr.` : `Monthly cost: $${monthlyTotal.toFixed(2)}/mo.`} Coverage starts ${startDate}.`,
           },
         ],
         structuredContent: {
           view: "confirmation",
-          orderId,
-          items: orderItems,
-          subtotal,
-          deliveryFee,
-          serviceFee,
-          tax,
-          tip,
-          grandTotal,
-          eta,
-          store: store || null,
-          method: store_id ? "pickup" : "delivery",
+          policyId,
+          items: coverageItems,
+          monthlyTotal,
+          annualTotal,
+          displayTotal,
+          billing: billingCycle,
+          startDate,
+          totalDevices,
         },
       };
     }
@@ -576,10 +724,9 @@ function createPizzazServer() {
   return server;
 }
 
-// ─── HTTP Server ────────────────────────────────────────────────────────────
+// ─── HTTP Server ─────────────────────────────────────────────────────────────
 const port = Number(process.env.PORT ?? 8787);
 
-// Active SSE sessions: transportSessionId → SSEServerTransport
 const sseSessions = new Map();
 
 function setCors(res) {
@@ -591,7 +738,6 @@ function setCors(res) {
 const httpServer = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host ?? "localhost"}`);
 
-  // CORS preflight
   if (req.method === "OPTIONS") {
     setCors(res);
     res.writeHead(204).end();
@@ -600,10 +746,9 @@ const httpServer = createServer(async (req, res) => {
 
   setCors(res);
 
-  // ── SSE endpoint: GET /sse opens an event stream ─────────────────────────
   if (url.pathname === "/sse" && req.method === "GET") {
     try {
-      const server = createPizzazServer();
+      const server = createShieldHubServer();
       const transport = new SSEServerTransport("/messages", res);
       sseSessions.set(transport.sessionId, transport);
       res.on("close", () => sseSessions.delete(transport.sessionId));
@@ -615,7 +760,6 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  // ── SSE messages: POST /messages?sessionId=… ─────────────────────────────
   if (url.pathname === "/messages" && req.method === "POST") {
     const sessionId = url.searchParams.get("sessionId");
     const transport = sseSessions.get(sessionId);
@@ -633,10 +777,9 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  // ── Streamable HTTP: POST /mcp (kept for direct MCP clients) ─────────────
   if (url.pathname === "/mcp" && req.method === "POST") {
     try {
-      const server = createPizzazServer();
+      const server = createShieldHubServer();
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
         enableJsonResponse: true,
@@ -650,10 +793,9 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  // ── Health check ─────────────────────────────────────────────────────────
   if (url.pathname === "/" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", app: "pizzaz-shop", version: "1.0.0" }));
+    res.end(JSON.stringify({ status: "ok", app: "shieldhub", version: "1.0.0" }));
     return;
   }
 
@@ -661,7 +803,7 @@ const httpServer = createServer(async (req, res) => {
 });
 
 httpServer.listen(port, "0.0.0.0", () => {
-  console.log(`\n  🍕 Pizzaz Shop MCP server running!\n`);
+  console.log(`\n  🛡️  ShieldHub MCP server running!\n`);
   console.log(`  Local:    http://0.0.0.0:${port}`);
   console.log(`  SSE:      http://0.0.0.0:${port}/sse`);
   console.log(`  MCP:      http://0.0.0.0:${port}/mcp\n`);
