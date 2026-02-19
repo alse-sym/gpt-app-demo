@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for shieldhub on 2026-02-19T00:00:00+01:00
+# fly.toml app configuration file generated for app-crimson-dust-3584 on 2026-02-19T13:47:24Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'shieldhub'
-primary_region = 'sjc'
+app = 'app-crimson-dust-3584'
+primary_region = 'iad'
 
 [build]
 
@@ -20,4 +20,4 @@ primary_region = 'sjc'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 1024
+  memory_mb = 256
