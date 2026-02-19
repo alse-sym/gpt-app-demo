@@ -1,9 +1,9 @@
 {
-  "name": "pizzaz-chatgpt-app",
+  "name": "shieldhub-chatgpt-app",
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "Pizzaz Pizza Shop — ChatGPT App built with the OpenAI Apps SDK",
+  "description": "ShieldHub — Embedded Device Protection Platform built with the OpenAI Apps SDK",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"

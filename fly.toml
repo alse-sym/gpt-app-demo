@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for pizzaz-shop on 2026-02-17T14:34:40+01:00
+# fly.toml app configuration file generated for shieldhub on 2026-02-19T00:00:00+01:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'pizzaz-shop'
+app = 'shieldhub'
 primary_region = 'sjc'
 
 [build]
