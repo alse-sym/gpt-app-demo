@@ -30,7 +30,7 @@ const PLANS = [
     rating: 4.3,
     popular: false,
     tier: "basic",
-    image: "https://images.unsplash.com/photo-1556656793-08538906a9f8?w=400&h=280&fit=crop",
+    icon: "smartphone",
   },
   {
     id: "basic-protect",
@@ -44,7 +44,7 @@ const PLANS = [
     rating: 4.5,
     popular: false,
     tier: "basic",
-    image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=280&fit=crop",
+    icon: "smartphone",
   },
   {
     id: "standard-guard",
@@ -58,7 +58,7 @@ const PLANS = [
     rating: 4.7,
     popular: true,
     tier: "standard",
-    image: "https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=400&h=280&fit=crop",
+    icon: "shield",
   },
   {
     id: "premium-shield",
@@ -72,7 +72,7 @@ const PLANS = [
     rating: 4.9,
     popular: true,
     tier: "premium",
-    image: "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=400&h=280&fit=crop",
+    icon: "globe",
   },
   {
     id: "family-bundle",
@@ -86,7 +86,7 @@ const PLANS = [
     rating: 4.8,
     popular: true,
     tier: "premium",
-    image: "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&h=280&fit=crop",
+    icon: "users",
   },
   {
     id: "business-pro",
@@ -100,7 +100,7 @@ const PLANS = [
     rating: 4.6,
     popular: false,
     tier: "premium",
-    image: "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=400&h=280&fit=crop",
+    icon: "briefcase",
   },
   {
     id: "wearable-care",
@@ -114,7 +114,7 @@ const PLANS = [
     rating: 4.4,
     popular: false,
     tier: "basic",
-    image: "https://images.unsplash.com/photo-1546868871-af0de0ae72be?w=400&h=280&fit=crop",
+    icon: "watch",
   },
   {
     id: "laptop-fortress",
@@ -128,7 +128,7 @@ const PLANS = [
     rating: 4.7,
     popular: false,
     tier: "standard",
-    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=280&fit=crop",
+    icon: "laptop",
   },
 ];
 
@@ -141,7 +141,7 @@ const PROMOTIONS = [
     originalPrice: 12.99,
     badge: "Best Value",
     savings: "30%",
-    image: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&h=280&fit=crop",
+    icon: "tag",
   },
   {
     id: "family-pack",
@@ -151,7 +151,7 @@ const PROMOTIONS = [
     originalPrice: 29.99,
     badge: "Most Popular",
     savings: "25%",
-    image: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&h=280&fit=crop",
+    icon: "users",
   },
   {
     id: "trade-in-shield",
@@ -161,7 +161,7 @@ const PROMOTIONS = [
     originalPrice: 12.99,
     badge: "Free Month",
     savings: "$12.99",
-    image: "https://images.unsplash.com/photo-1556656793-08538906a9f8?w=400&h=280&fit=crop",
+    icon: "refresh",
   },
   {
     id: "annual-saver",
@@ -171,7 +171,7 @@ const PROMOTIONS = [
     originalPrice: 12.99,
     badge: "Save 17%",
     savings: "2 months free",
-    image: "https://images.unsplash.com/photo-1563986768609-322da13575f2?w=400&h=280&fit=crop",
+    icon: "calendar",
   },
 ];
 

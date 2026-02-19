@@ -7,327 +7,353 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --blue: #2563EB;
-    --blue-dark: #1D4ED8;
-    --blue-light: #EFF6FF;
-    --teal: #0D9488;
-    --teal-light: #CCFBF1;
-    --green: #22C55E;
-    --green-light: #DCFCE7;
-    --amber: #F59E0B;
-    --amber-light: #FEF3C7;
-    --red: #EF4444;
-    --bg: #FFFFFF;
-    --surface: #F8FAFC;
-    --border: rgba(0,0,0,0.08);
-    --text: #0F172A;
-    --text-secondary: #64748B;
-    --text-muted: #94A3B8;
-    --radius: 16px;
-    --radius-sm: 10px;
+    --bg: #212121;
+    --surface: #2f2f2f;
+    --surface-hover: #3a3a3a;
+    --surface-raised: #383838;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #ececec;
+    --text-secondary: #b4b4b4;
+    --text-muted: #8e8e8e;
+    --accent: #10a37f;
+    --accent-hover: #0e8f6f;
+    --accent-subtle: rgba(16,163,127,0.12);
+    --accent-blue: #5b9bf5;
+    --accent-blue-subtle: rgba(91,155,245,0.12);
+    --amber: #e5a50a;
+    --amber-subtle: rgba(229,165,10,0.12);
+    --red: #ef4444;
+    --red-subtle: rgba(239,68,68,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
     --radius-xs: 6px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
-    --transition: 0.2s ease;
+    --shadow: 0 0 0 1px var(--border);
+    --transition: 0.15s ease;
   }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: "Söhne", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
     color: var(--text);
     background: var(--bg);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
-
   .app { max-width: 100%; min-height: 100vh; }
-  .container { padding: 16px; }
 
   .header {
     display: flex; align-items: center; gap: 12px;
-    padding: 16px; border-bottom: 1px solid var(--border);
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
   }
   .header-logo {
-    width: 44px; height: 44px; border-radius: 12px;
-    background: var(--blue); display: flex; align-items: center;
-    justify-content: center; font-size: 20px; flex-shrink: 0; color: #fff;
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; color: #fff;
   }
-  .header-text h1 { font-size: 17px; font-weight: 600; }
-  .header-text p { font-size: 13px; color: var(--text-secondary); }
+  .header-logo svg { width: 20px; height: 20px; }
+  .header-text h1 { font-size: 15px; font-weight: 600; color: var(--text); }
+  .header-text p { font-size: 12px; color: var(--text-muted); }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 8px 16px; border-radius: var(--radius-xs); font-size: 14px;
+    padding: 8px 14px; border-radius: var(--radius-xs); font-size: 13px;
     font-weight: 500; border: none; cursor: pointer; transition: all var(--transition);
     text-decoration: none; line-height: 1.4;
   }
-  .btn-primary { background: var(--blue); color: #fff; }
-  .btn-primary:hover { background: var(--blue-dark); }
-  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-  .btn-secondary:hover { background: #F1F5F9; }
-  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
   .btn-block { width: 100%; }
 
   .filters {
-    display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto;
+    display: flex; gap: 6px; padding: 10px 16px; overflow-x: auto;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
   }
   .filters::-webkit-scrollbar { display: none; }
   .filter-chip {
-    padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
-    border: 1px solid var(--border); background: var(--bg); color: var(--text-secondary);
+    padding: 5px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary);
     cursor: pointer; white-space: nowrap; transition: all var(--transition);
   }
+  .filter-chip:hover { background: var(--surface-hover); color: var(--text); }
   .filter-chip.active {
-    background: var(--text); color: #fff; border-color: var(--text);
+    background: var(--text); color: var(--bg); border-color: var(--text);
   }
 
+  /* ─── Plan cards (no images) ─────────────────────────────────────────────── */
   .plan-grid {
-    display: grid; grid-template-columns: 1fr; gap: 12px; padding: 16px;
+    display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px 16px;
   }
   @media (min-width: 480px) { .plan-grid { grid-template-columns: 1fr 1fr; } }
 
   .plan-card {
     border: 1px solid var(--border); border-radius: var(--radius);
-    overflow: hidden; background: var(--bg); transition: all var(--transition);
-    position: relative;
+    background: var(--surface); transition: all var(--transition);
+    position: relative; overflow: hidden;
   }
-  .plan-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
-  .plan-card.popular { border-color: var(--blue); }
-  .plan-card-img {
-    width: 100%; height: 120px; object-fit: cover; background: var(--surface);
-  }
-  .plan-card-body { padding: 12px; }
-  .plan-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
-  .plan-card-name { font-size: 15px; font-weight: 600; }
-  .plan-card-price {
-    font-size: 15px; font-weight: 700; color: var(--blue);
-    white-space: nowrap; margin-left: 8px;
-  }
-  .plan-card-price span { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
-  .plan-card-desc { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-  .plan-card-footer {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: 8px;
-  }
+  .plan-card:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+  .plan-card.popular { border-color: var(--accent); }
 
-  .coverage-list { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .plan-card-header {
+    padding: 14px 14px 10px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .plan-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .plan-icon svg { width: 20px; height: 20px; }
+  .plan-icon.basic { background: var(--surface-raised); color: var(--text-secondary); }
+  .plan-icon.standard { background: var(--accent-blue-subtle); color: var(--accent-blue); }
+  .plan-icon.premium { background: var(--amber-subtle); color: var(--amber); }
+
+  .plan-header-text { flex: 1; min-width: 0; }
+  .plan-name { font-size: 14px; font-weight: 600; }
+  .plan-price {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    margin-top: 1px;
+  }
+  .plan-price span { font-weight: 400; color: var(--text-muted); font-size: 12px; }
+
+  .plan-badges {
+    display: flex; gap: 6px; position: absolute; top: 12px; right: 12px;
+  }
+  .badge {
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .badge-popular { background: var(--accent-subtle); color: var(--accent); }
+  .badge-tier { background: var(--surface-raised); color: var(--text-muted); }
+  .badge-tier.standard { background: var(--accent-blue-subtle); color: var(--accent-blue); }
+  .badge-tier.premium { background: var(--amber-subtle); color: var(--amber); }
+
+  .plan-card-body { padding: 0 14px 14px; }
+  .plan-desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4; }
+
+  .coverage-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
   .coverage-tag {
     display: inline-flex; align-items: center; gap: 3px;
-    padding: 2px 8px; border-radius: 10px;
-    font-size: 11px; font-weight: 500; background: var(--blue-light);
-    color: var(--blue);
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 500;
+    background: var(--accent-subtle); color: var(--accent);
   }
-  .coverage-tag.teal { background: var(--teal-light); color: var(--teal); }
+  .coverage-tag svg { width: 10px; height: 10px; }
+  .coverage-tag.more { background: var(--surface-raised); color: var(--text-muted); }
 
   .plan-meta {
-    display: flex; align-items: center; gap: 12px; margin-top: 6px;
-    font-size: 12px; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; color: var(--text-muted); margin-bottom: 10px;
   }
-  .plan-meta-item { display: flex; align-items: center; gap: 4px; }
+  .plan-meta strong { color: var(--accent); font-weight: 600; }
 
-  .popular-badge {
-    position: absolute; top: 10px; right: 10px;
-    padding: 3px 10px; border-radius: 8px;
-    font-size: 11px; font-weight: 600; color: #fff;
-    background: var(--blue);
+  .plan-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 2px;
   }
-  .tier-badge {
-    position: absolute; top: 10px; left: 10px;
-    padding: 3px 10px; border-radius: 8px;
-    font-size: 11px; font-weight: 600; color: #fff;
-    background: var(--teal);
-  }
-  .tier-badge.premium { background: var(--amber); }
-  .tier-badge.basic { background: var(--text-secondary); }
+  .device-icons { display: flex; gap: 3px; font-size: 13px; }
+  .rating { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--text-muted); }
+  .rating svg { width: 12px; height: 12px; color: var(--amber); }
 
-  .rating { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-secondary); }
-  .rating svg { width: 14px; height: 14px; }
-
-  .carousel-wrapper { position: relative; padding: 16px 0; }
+  /* ─── Promotions carousel ────────────────────────────────────────────────── */
+  .carousel-wrapper { position: relative; padding: 12px 0; }
   .carousel-track {
-    display: flex; gap: 12px; overflow-x: auto; padding: 0 16px;
+    display: flex; gap: 10px; overflow-x: auto; padding: 0 16px;
     scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .carousel-track::-webkit-scrollbar { display: none; }
+
   .promo-card {
-    flex: 0 0 260px; scroll-snap-align: start;
+    flex: 0 0 240px; scroll-snap-align: start;
     border: 1px solid var(--border); border-radius: var(--radius);
-    overflow: hidden; background: var(--bg); position: relative;
+    background: var(--surface); position: relative; overflow: hidden;
   }
-  .promo-card-img {
-    width: 100%; height: 140px; object-fit: cover; background: var(--surface);
+  .promo-card-header {
+    padding: 16px 14px; display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--border);
   }
+  .promo-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--accent-subtle); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .promo-icon svg { width: 18px; height: 18px; }
+  .promo-badge-wrap { position: absolute; top: 10px; right: 10px; }
   .promo-badge {
-    position: absolute; top: 10px; left: 10px;
-    padding: 4px 10px; border-radius: 8px;
-    font-size: 11px; font-weight: 600; color: #fff;
-    background: var(--blue);
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 600;
+    background: var(--accent); color: #fff;
   }
-  .promo-card-body { padding: 12px; }
-  .promo-card-name { font-size: 15px; font-weight: 600; }
-  .promo-card-desc { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-  .promo-pricing { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-  .promo-price { font-size: 18px; font-weight: 700; color: var(--blue); }
-  .promo-price span { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
-  .promo-original {
-    font-size: 14px; color: var(--text-muted);
-    text-decoration: line-through;
-  }
+  .promo-card-body { padding: 12px 14px 14px; }
+  .promo-name { font-size: 14px; font-weight: 600; }
+  .promo-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+  .promo-pricing { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .promo-price { font-size: 16px; font-weight: 700; color: var(--accent); }
+  .promo-price span { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+  .promo-original { font-size: 13px; color: var(--text-muted); text-decoration: line-through; }
+
   .carousel-nav {
     position: absolute; top: 50%; transform: translateY(-50%);
-    width: 32px; height: 32px; border-radius: 50%; background: #fff;
-    border: 1px solid var(--border); cursor: pointer; display: flex;
-    align-items: center; justify-content: center; box-shadow: var(--shadow);
-    z-index: 5; transition: all var(--transition);
+    width: 30px; height: 30px; border-radius: 50%; background: var(--surface-raised);
+    border: 1px solid var(--border-strong); cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    z-index: 5; transition: all var(--transition); color: var(--text-secondary);
   }
-  .carousel-nav:hover { box-shadow: var(--shadow-lg); }
+  .carousel-nav:hover { background: var(--surface-hover); color: var(--text); }
+  .carousel-nav svg { width: 16px; height: 16px; }
   .carousel-nav.prev { left: 6px; }
   .carousel-nav.next { right: 6px; }
 
-  .centers-section { padding: 16px; }
+  /* ─── Repair centers ─────────────────────────────────────────────────────── */
+  .centers-section { padding: 12px 16px; }
   .center-map-placeholder {
-    width: 100%; height: 200px; border-radius: var(--radius);
-    background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 50%, #CCFBF1 100%);
+    width: 100%; height: 160px; border-radius: var(--radius);
+    background: linear-gradient(135deg, #1a2a2a 0%, #1a2530 50%, #1e2330 100%);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     margin-bottom: 12px; position: relative; overflow: hidden;
   }
   .map-grid {
-    position: absolute; inset: 0; opacity: 0.15;
+    position: absolute; inset: 0; opacity: 0.08;
     background-image:
-      linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+      linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px);
     background-size: 30px 30px;
   }
   .map-pin {
-    width: 28px; height: 28px; background: var(--blue); border-radius: 50% 50% 50% 0;
+    width: 24px; height: 24px; background: var(--accent); border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg); position: relative; z-index: 2;
-    box-shadow: 0 2px 8px rgba(37,99,235,0.4);
+    box-shadow: 0 2px 10px rgba(16,163,127,0.5);
   }
   .map-pin::after {
-    content: ""; position: absolute; top: 6px; left: 6px;
-    width: 16px; height: 16px; background: #fff; border-radius: 50%;
+    content: ""; position: absolute; top: 5px; left: 5px;
+    width: 14px; height: 14px; background: var(--bg); border-radius: 50%;
   }
-  .map-label {
-    margin-top: 12px; font-size: 13px; color: var(--text-secondary);
-    z-index: 2; font-weight: 500;
-  }
-  .center-list { display: flex; flex-direction: column; gap: 8px; }
+  .map-label { margin-top: 10px; font-size: 12px; color: var(--text-muted); z-index: 2; }
+
+  .center-list { display: flex; flex-direction: column; gap: 6px; }
   .center-card {
-    display: flex; align-items: flex-start; gap: 12px;
+    display: flex; align-items: flex-start; gap: 10px;
     padding: 12px; border: 1px solid var(--border);
     border-radius: var(--radius-sm); transition: all var(--transition);
     cursor: pointer;
   }
-  .center-card:hover { border-color: var(--blue); background: var(--blue-light); }
+  .center-card:hover { border-color: var(--accent); background: rgba(16,163,127,0.04); }
   .center-icon {
-    width: 40px; height: 40px; border-radius: 10px; background: var(--blue-light);
+    width: 36px; height: 36px; border-radius: 8px; background: var(--accent-subtle);
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0; color: var(--blue);
+    flex-shrink: 0; color: var(--accent);
   }
+  .center-icon svg { width: 16px; height: 16px; }
   .center-info { flex: 1; min-width: 0; }
-  .center-name { font-size: 14px; font-weight: 600; }
-  .center-detail { font-size: 12px; color: var(--text-secondary); }
-  .center-services { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .center-name { font-size: 13px; font-weight: 600; }
+  .center-detail { font-size: 11px; color: var(--text-muted); }
+  .center-services { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
   .service-tag {
-    padding: 2px 7px; border-radius: 8px; font-size: 10px; font-weight: 500;
-    background: var(--teal-light); color: var(--teal);
+    padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;
+    background: var(--surface-raised); color: var(--text-secondary);
   }
   .center-meta { text-align: right; flex-shrink: 0; }
-  .center-rating { font-size: 13px; font-weight: 600; }
-  .center-turnaround { font-size: 11px; color: var(--text-secondary); }
+  .center-rating { font-size: 12px; font-weight: 600; color: var(--text); }
+  .center-rating svg { width: 12px; height: 12px; color: var(--amber); }
+  .center-turnaround { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
   .certified-badge {
-    display: inline-flex; align-items: center; gap: 3px;
-    font-size: 10px; font-weight: 600; color: var(--green);
-    margin-top: 2px;
+    display: inline-flex; align-items: center; gap: 2px;
+    font-size: 10px; font-weight: 600; color: var(--accent); margin-top: 2px;
   }
+  .certified-badge svg { width: 10px; height: 10px; }
 
-  .cart-section { padding: 16px; }
+  /* ─── Cart ───────────────────────────────────────────────────────────────── */
+  .cart-section { padding: 12px 16px; }
   .cart-empty {
-    text-align: center; padding: 40px 16px;
-    color: var(--text-secondary); font-size: 14px;
+    text-align: center; padding: 36px 16px; color: var(--text-muted); font-size: 13px;
   }
-  .cart-empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .cart-empty-icon { margin-bottom: 10px; color: var(--text-muted); }
+  .cart-empty-icon svg { width: 36px; height: 36px; }
+
   .cart-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
   }
   .cart-item:last-child { border-bottom: none; }
   .cart-item-icon {
-    width: 48px; height: 48px; border-radius: var(--radius-sm);
-    background: var(--blue-light); display: flex; align-items: center;
-    justify-content: center; flex-shrink: 0; font-size: 22px;
+    width: 40px; height: 40px; border-radius: var(--radius-sm);
+    background: var(--accent-subtle); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; color: var(--accent);
   }
+  .cart-item-icon svg { width: 18px; height: 18px; }
   .cart-item-info { flex: 1; min-width: 0; }
-  .cart-item-name { font-size: 14px; font-weight: 600; }
-  .cart-item-desc { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cart-item-qty {
-    display: flex; align-items: center; gap: 10px;
-  }
+  .cart-item-name { font-size: 13px; font-weight: 600; }
+  .cart-item-desc { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cart-item-qty { display: flex; align-items: center; gap: 8px; }
   .qty-btn {
-    width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
-    background: var(--bg); cursor: pointer; display: flex;
-    align-items: center; justify-content: center; font-size: 16px;
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border-strong);
+    background: transparent; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; color: var(--text-secondary);
     transition: all var(--transition);
   }
-  .qty-btn:hover { background: var(--surface); }
-  .qty-num { font-size: 14px; font-weight: 600; min-width: 20px; text-align: center; }
-  .cart-item-price { font-size: 14px; font-weight: 600; color: var(--blue); margin-left: 12px; white-space: nowrap; }
+  .qty-btn svg { width: 14px; height: 14px; }
+  .qty-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .qty-num { font-size: 13px; font-weight: 600; min-width: 16px; text-align: center; }
+  .cart-item-price { font-size: 13px; font-weight: 600; color: var(--accent); margin-left: 10px; white-space: nowrap; }
+  .cart-item-price span { font-size: 10px; font-weight: 400; color: var(--text-muted); }
 
   .cart-summary {
-    margin-top: 16px; padding: 16px; background: var(--surface);
-    border-radius: var(--radius-sm);
+    margin-top: 14px; padding: 14px; background: var(--surface);
+    border-radius: var(--radius-sm); border: 1px solid var(--border);
   }
   .cart-summary-row {
     display: flex; justify-content: space-between;
-    font-size: 13px; padding: 4px 0; color: var(--text-secondary);
+    font-size: 12px; padding: 3px 0; color: var(--text-muted);
   }
   .cart-summary-row.total {
-    font-size: 16px; font-weight: 700; color: var(--text);
+    font-size: 14px; font-weight: 700; color: var(--text);
     border-top: 1px solid var(--border); margin-top: 8px; padding-top: 10px;
   }
 
+  /* ─── Confirmation ───────────────────────────────────────────────────────── */
   .confirmation { padding: 24px 16px; text-align: center; }
   .confirm-icon {
-    width: 64px; height: 64px; border-radius: 50%;
-    background: var(--green-light); display: flex;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--accent-subtle); display: flex;
     align-items: center; justify-content: center;
-    margin: 0 auto 16px; font-size: 28px;
+    margin: 0 auto 14px; color: var(--accent);
   }
-  .confirm-title { font-size: 20px; font-weight: 700; }
-  .confirm-policy-id {
-    font-size: 13px; color: var(--text-secondary); margin-top: 4px;
-  }
+  .confirm-icon svg { width: 28px; height: 28px; }
+  .confirm-title { font-size: 18px; font-weight: 700; }
+  .confirm-policy-id { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
   .confirm-coverage {
     display: inline-flex; align-items: center; gap: 6px;
-    margin-top: 12px; padding: 8px 16px; background: var(--blue-light);
-    border-radius: 20px; font-size: 14px; font-weight: 600; color: var(--blue);
+    margin-top: 12px; padding: 6px 14px; background: var(--accent-subtle);
+    border-radius: 16px; font-size: 12px; font-weight: 600; color: var(--accent);
   }
+  .confirm-coverage svg { width: 14px; height: 14px; }
   .confirm-items {
-    margin-top: 20px; text-align: left;
+    margin-top: 18px; text-align: left;
     border: 1px solid var(--border); border-radius: var(--radius-sm);
     overflow: hidden;
   }
   .confirm-items-header {
-    padding: 10px 14px; background: var(--surface);
-    font-size: 13px; font-weight: 600; color: var(--text-secondary);
+    padding: 8px 12px; background: var(--surface);
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em;
   }
   .confirm-item {
-    display: flex; justify-content: space-between; padding: 10px 14px;
-    font-size: 14px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; padding: 8px 12px;
+    font-size: 13px; border-top: 1px solid var(--border);
   }
 
   .error-view {
-    padding: 40px 16px; text-align: center;
-    color: var(--red); font-size: 14px;
+    padding: 36px 16px; text-align: center;
+    color: var(--red); font-size: 13px;
   }
 
   .loading {
     display: flex; align-items: center; justify-content: center;
-    padding: 60px 16px; color: var(--text-muted); font-size: 14px;
+    padding: 60px 16px; color: var(--text-muted); font-size: 13px;
   }
   .loading-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--blue);
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
     margin: 0 3px; animation: bounce 1.4s infinite ease-in-out both;
   }
   .loading-dot:nth-child(1) { animation-delay: -0.32s; }
@@ -338,15 +364,15 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .fade-in { animation: fadeIn 0.3s ease forwards; }
+  .fade-in { animation: fadeIn 0.25s ease forwards; }
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .slide-up { animation: slideUp 0.4s ease forwards; }
+  .slide-up { animation: slideUp 0.35s ease forwards; }
 </style>
 </head>
 <body>
@@ -403,7 +429,6 @@ window.addEventListener("message", (event) => {
   if (event.source !== window.parent) return;
   const msg = event.data;
   if (!msg || msg.jsonrpc !== "2.0") return;
-
   if (msg.id && pendingRequests.has(msg.id)) {
     const { resolve, reject } = pendingRequests.get(msg.id);
     pendingRequests.delete(msg.id);
@@ -411,18 +436,16 @@ window.addEventListener("message", (event) => {
     else resolve(msg.result);
     return;
   }
-
   if (msg.method === "ui/notifications/tool-result") {
     const data = msg.params?.structuredContent;
     if (data) render(data);
   }
 });
 
-// ─── SVG Icons ───────────────────────────────────────────────────────────────
 const icons = {
   shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
   star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
-  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
   checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
@@ -430,21 +453,36 @@ const icons = {
   chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
   mapPin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
-  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
   tool: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
   smartphone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+  laptop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0l1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>',
+  watch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><polyline points="12 9 12 12 13.5 13.5"/><path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"/></svg>',
+  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  briefcase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
   cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
 };
 
-const deviceIcons = {
-  smartphone: '📱',
-  tablet: '📱',
-  laptop: '💻',
-  smartwatch: '⌚',
-  earbuds: '🎧',
+const planIcons = {
+  smartphone: icons.smartphone,
+  shield: icons.shield,
+  globe: icons.globe,
+  users: icons.users,
+  briefcase: icons.briefcase,
+  watch: icons.watch,
+  laptop: icons.laptop,
 };
 
-// ─── Rendering ───────────────────────────────────────────────────────────────
+const promoIcons = {
+  tag: icons.tag,
+  users: icons.users,
+  refresh: icons.refresh,
+  calendar: icons.calendar,
+};
+
 const app = document.getElementById("app");
 
 function render(data) {
@@ -460,7 +498,6 @@ function render(data) {
   }
 }
 
-// ─── Plans View ──────────────────────────────────────────────────────────────
 function renderPlans(data) {
   const { items, filter } = data;
   const filters = ["all", "smartphone", "tablet", "laptop", "wearable", "popular", "premium"];
@@ -482,34 +519,37 @@ function renderPlans(data) {
     </div>
     <div class="plan-grid">
       ${items.map((item, i) => `
-        <div class="plan-card ${item.popular ? 'popular' : ''} fade-in" style="animation-delay: ${i * 0.05}s" data-id="${item.id}">
-          <img class="plan-card-img" src="${item.image}" alt="${item.name}" loading="lazy" />
-          ${item.popular ? '<div class="popular-badge">Popular</div>' : ''}
-          <div class="tier-badge ${item.tier}">${item.tier.charAt(0).toUpperCase() + item.tier.slice(1)}</div>
-          <div class="plan-card-body">
-            <div class="plan-card-top">
-              <span class="plan-card-name">${item.name}</span>
-              <span class="plan-card-price">$${item.monthlyPrice.toFixed(2)}<span>/mo</span></span>
+        <div class="plan-card ${item.popular ? 'popular' : ''} fade-in" style="animation-delay: ${i * 0.04}s">
+          <div class="plan-badges">
+            ${item.popular ? '<span class="badge badge-popular">Popular</span>' : ''}
+          </div>
+          <div class="plan-card-header">
+            <div class="plan-icon ${item.tier}">${planIcons[item.icon] || icons.shield}</div>
+            <div class="plan-header-text">
+              <div class="plan-name">${item.name}</div>
+              <div class="plan-price">$${item.monthlyPrice.toFixed(2)}<span>/mo</span></div>
             </div>
-            <div class="plan-card-desc">${item.description}</div>
+          </div>
+          <div class="plan-card-body">
+            <div class="plan-desc">${item.description}</div>
             <div class="coverage-list">
               ${item.coverage.slice(0, 3).map(c =>
                 `<span class="coverage-tag">${icons.check} ${c}</span>`
               ).join('')}
-              ${item.coverage.length > 3 ? `<span class="coverage-tag teal">+${item.coverage.length - 3} more</span>` : ''}
+              ${item.coverage.length > 3 ? `<span class="coverage-tag more">+${item.coverage.length - 3} more</span>` : ''}
             </div>
             <div class="plan-meta">
-              <span class="plan-meta-item">${item.deductible === 0 ? '<strong style="color:var(--green)">$0 deductible</strong>' : '$' + item.deductible + ' deductible'}</span>
-              <span class="plan-meta-item">${item.claimLimit} claims/yr</span>
+              <span>${item.deductible === 0 ? '<strong>$0 deductible</strong>' : '$' + item.deductible + ' deductible'}</span>
+              <span>${item.claimLimit} claims/yr</span>
             </div>
-            <div class="plan-card-footer">
-              <div style="display:flex;gap:4px">
-                ${item.deviceTypes.map(d => `<span title="${d}">${deviceIcons[d] || '📱'}</span>`).join('')}
+            <div class="plan-footer">
+              <div class="device-icons">
+                ${item.deviceTypes.map(d => {
+                  const m = { smartphone: '📱', tablet: '📱', laptop: '💻', smartwatch: '⌚', earbuds: '🎧' };
+                  return `<span title="${d}">${m[d] || '📱'}</span>`;
+                }).join('')}
               </div>
-              <div class="rating">
-                ${icons.star}
-                ${item.rating}
-              </div>
+              <div class="rating">${icons.star} ${item.rating}</div>
             </div>
             <button class="btn btn-primary btn-block btn-sm" style="margin-top:10px" data-add="${item.id}">
               Add to Cart
@@ -521,33 +561,24 @@ function renderPlans(data) {
   `;
 
   app.querySelectorAll('.filter-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      callTool('browse_plans', { filter: chip.dataset.filter });
-    });
+    chip.addEventListener('click', () => callTool('browse_plans', { filter: chip.dataset.filter }));
   });
-
   app.querySelectorAll('[data-add]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const planId = btn.dataset.add;
       btn.textContent = 'Added!';
-      btn.style.background = 'var(--green)';
-      callTool('add_to_cart', { plan_id: planId, quantity: 1 });
-      setTimeout(() => {
-        btn.textContent = 'Add to Cart';
-        btn.style.background = '';
-      }, 1200);
+      btn.style.background = 'var(--accent)';
+      callTool('add_to_cart', { plan_id: btn.dataset.add, quantity: 1 });
+      setTimeout(() => { btn.textContent = 'Add to Cart'; btn.style.background = ''; }, 1200);
     });
   });
 }
 
-// ─── Promotions View ─────────────────────────────────────────────────────────
 function renderPromotions(data) {
   const { promotions } = data;
-
   app.innerHTML = `
     <div class="header">
-      <div class="header-logo" style="background:var(--teal)">%</div>
+      <div class="header-logo" style="background:var(--amber)">${icons.tag}</div>
       <div class="header-text">
         <h1>Current Promotions</h1>
         <p>${promotions.length} offers available</p>
@@ -556,22 +587,22 @@ function renderPromotions(data) {
     <div class="carousel-wrapper">
       <div class="carousel-track" id="carouselTrack">
         ${promotions.map((p, i) => `
-          <div class="promo-card fade-in" style="animation-delay: ${i * 0.1}s">
-            <img class="promo-card-img" src="${p.image}" alt="${p.name}" loading="lazy" />
-            <div class="promo-badge">${p.badge}</div>
+          <div class="promo-card fade-in" style="animation-delay: ${i * 0.08}s">
+            <div class="promo-badge-wrap"><span class="promo-badge">${p.badge}</span></div>
+            <div class="promo-card-header">
+              <div class="promo-icon">${promoIcons[p.icon] || icons.tag}</div>
+              <div class="promo-name">${p.name}</div>
+            </div>
             <div class="promo-card-body">
-              <div class="promo-card-name">${p.name}</div>
-              <div class="promo-card-desc">${p.description}</div>
+              <div class="promo-desc">${p.description}</div>
               <div class="promo-pricing">
                 ${p.monthlyPrice > 0
                   ? `<span class="promo-price">$${p.monthlyPrice.toFixed(2)}<span>/mo</span></span>`
-                  : `<span class="promo-price" style="color:var(--green)">FREE</span>`
+                  : `<span class="promo-price">FREE</span>`
                 }
                 <span class="promo-original">$${p.originalPrice.toFixed(2)}/mo</span>
               </div>
-              <button class="btn btn-primary btn-block btn-sm" style="margin-top:10px">
-                Learn More
-              </button>
+              <button class="btn btn-primary btn-block btn-sm" style="margin-top:10px">Learn More</button>
             </div>
           </div>
         `).join('')}
@@ -580,23 +611,16 @@ function renderPromotions(data) {
       <button class="carousel-nav next" id="carouselNext">${icons.chevronRight}</button>
     </div>
   `;
-
   const track = document.getElementById('carouselTrack');
-  document.getElementById('carouselPrev').addEventListener('click', () => {
-    track.scrollBy({ left: -280, behavior: 'smooth' });
-  });
-  document.getElementById('carouselNext').addEventListener('click', () => {
-    track.scrollBy({ left: 280, behavior: 'smooth' });
-  });
+  document.getElementById('carouselPrev').addEventListener('click', () => track.scrollBy({ left: -260, behavior: 'smooth' }));
+  document.getElementById('carouselNext').addEventListener('click', () => track.scrollBy({ left: 260, behavior: 'smooth' }));
 }
 
-// ─── Repair Centers View ─────────────────────────────────────────────────────
 function renderCenters(data) {
   const { centers } = data;
-
   app.innerHTML = `
     <div class="header">
-      <div class="header-logo" style="font-size:18px">${icons.tool}</div>
+      <div class="header-logo">${icons.tool}</div>
       <div class="header-text">
         <h1>Repair Centers</h1>
         <p>${centers.length} authorized locations</p>
@@ -610,12 +634,12 @@ function renderCenters(data) {
       </div>
       <div class="center-list">
         ${centers.map((c, i) => `
-          <div class="center-card fade-in" style="animation-delay: ${i * 0.05}s" data-center="${c.id}">
+          <div class="center-card fade-in" style="animation-delay: ${i * 0.04}s">
             <div class="center-icon">${icons.tool}</div>
             <div class="center-info">
               <div class="center-name">${c.name}</div>
               <div class="center-detail">${c.address}, ${c.city}</div>
-              <div class="center-detail">${c.phone} &middot; ${c.hours}</div>
+              <div class="center-detail">${c.phone} · ${c.hours}</div>
               <div class="center-services">
                 ${c.services.map(s => `<span class="service-tag">${s}</span>`).join('')}
               </div>
@@ -632,42 +656,32 @@ function renderCenters(data) {
   `;
 }
 
-// ─── Cart View ───────────────────────────────────────────────────────────────
 function renderCart(data) {
   const { cartItems, monthlyTotal } = data;
-
   if (!cartItems || cartItems.length === 0) {
     app.innerHTML = `
       <div class="header">
         <div class="header-logo">${icons.cart}</div>
-        <div class="header-text">
-          <h1>Your Cart</h1>
-          <p>0 plans</p>
-        </div>
+        <div class="header-text"><h1>Your Cart</h1><p>0 plans</p></div>
       </div>
       <div class="cart-empty slide-up">
         <div class="cart-empty-icon">${icons.shield}</div>
         <p>Your cart is empty</p>
-        <p style="font-size:12px;margin-top:4px;color:var(--text-muted)">Ask me to show protection plans to get started!</p>
+        <p style="font-size:11px;margin-top:4px;color:var(--text-muted)">Ask me to show protection plans to get started!</p>
       </div>
     `;
     return;
   }
-
   const planCount = cartItems.reduce((s, c) => s + c.quantity, 0);
   const annualTotal = monthlyTotal * 10;
-
   app.innerHTML = `
     <div class="header">
       <div class="header-logo">${icons.cart}</div>
-      <div class="header-text">
-        <h1>Your Cart</h1>
-        <p>${planCount} plan${planCount !== 1 ? 's' : ''}</p>
-      </div>
+      <div class="header-text"><h1>Your Cart</h1><p>${planCount} plan${planCount !== 1 ? 's' : ''}</p></div>
     </div>
     <div class="cart-section">
       ${cartItems.map((item, i) => `
-        <div class="cart-item fade-in" style="animation-delay: ${i * 0.05}s">
+        <div class="cart-item fade-in" style="animation-delay: ${i * 0.04}s">
           <div class="cart-item-icon">${icons.shield}</div>
           <div class="cart-item-info">
             <div class="cart-item-name">${item.name}</div>
@@ -678,37 +692,26 @@ function renderCart(data) {
             <span class="qty-num">${item.quantity}</span>
             <button class="qty-btn" data-qty-plus="${item.id}">${icons.plus}</button>
           </div>
-          <div class="cart-item-price">$${(item.monthlyPrice * item.quantity).toFixed(2)}<span style="font-size:11px;font-weight:400;color:var(--text-secondary)">/mo</span></div>
+          <div class="cart-item-price">$${(item.monthlyPrice * item.quantity).toFixed(2)}<span>/mo</span></div>
         </div>
       `).join('')}
       <div class="cart-summary slide-up">
-        <div class="cart-summary-row">
-          <span>Monthly Total</span><span>$${monthlyTotal.toFixed(2)}/mo</span>
-        </div>
-        <div class="cart-summary-row">
-          <span>Annual (pay yearly, save 2 months)</span><span>$${annualTotal.toFixed(2)}/yr</span>
-        </div>
-        <div class="cart-summary-row total">
-          <span>Due Today (first month)</span><span>$${monthlyTotal.toFixed(2)}</span>
-        </div>
+        <div class="cart-summary-row"><span>Monthly Total</span><span>$${monthlyTotal.toFixed(2)}/mo</span></div>
+        <div class="cart-summary-row"><span>Annual (save 2 months)</span><span>$${annualTotal.toFixed(2)}/yr</span></div>
+        <div class="cart-summary-row total"><span>Due Today</span><span>$${monthlyTotal.toFixed(2)}</span></div>
       </div>
-      <button class="btn btn-primary btn-block" style="margin-top:16px;padding:12px;font-size:15px" id="purchaseBtn">
+      <button class="btn btn-primary btn-block" style="margin-top:14px;padding:10px;font-size:13px" id="purchaseBtn">
         ${icons.shield} Activate Protection — $${monthlyTotal.toFixed(2)}/mo
       </button>
     </div>
   `;
-
-  document.getElementById('purchaseBtn')?.addEventListener('click', () => {
-    callTool('purchase_protection', { billing: 'monthly' });
-  });
+  document.getElementById('purchaseBtn')?.addEventListener('click', () => callTool('purchase_protection', { billing: 'monthly' }));
 }
 
-// ─── Confirmation View ───────────────────────────────────────────────────────
 function renderConfirmation(data) {
   const { policyId, items, monthlyTotal, annualTotal, billing, startDate, totalDevices } = data;
   const displayTotal = billing === 'annual' ? annualTotal : monthlyTotal;
   const displayLabel = billing === 'annual' ? '/yr' : '/mo';
-
   app.innerHTML = `
     <div class="confirmation slide-up">
       <div class="confirm-icon">${icons.check}</div>
@@ -716,7 +719,7 @@ function renderConfirmation(data) {
       <div class="confirm-policy-id">Policy #${policyId}</div>
       <div class="confirm-coverage">
         ${icons.shield}
-        ${totalDevices} device${totalDevices !== 1 ? 's' : ''} protected &middot; Starts ${startDate}
+        ${totalDevices} device${totalDevices !== 1 ? 's' : ''} protected · Starts ${startDate}
       </div>
       <div class="confirm-items">
         <div class="confirm-items-header">Coverage Summary</div>
@@ -726,31 +729,18 @@ function renderConfirmation(data) {
             <span>$${(item.monthlyPrice * item.quantity).toFixed(2)}/mo</span>
           </div>
         `).join('')}
-        <div class="confirm-item" style="color:var(--text-secondary)">
-          <span>Billing</span><span>${billing === 'annual' ? 'Annual' : 'Monthly'}</span>
-        </div>
-        <div class="confirm-item" style="color:var(--text-secondary)">
-          <span>Coverage Start</span><span>${startDate}</span>
-        </div>
-        <div class="confirm-item" style="font-weight:700">
-          <span>Total</span><span>$${displayTotal.toFixed(2)}${displayLabel}</span>
-        </div>
+        <div class="confirm-item" style="color:var(--text-muted)"><span>Billing</span><span>${billing === 'annual' ? 'Annual' : 'Monthly'}</span></div>
+        <div class="confirm-item" style="color:var(--text-muted)"><span>Coverage Start</span><span>${startDate}</span></div>
+        <div class="confirm-item" style="font-weight:700"><span>Total</span><span>$${displayTotal.toFixed(2)}${displayLabel}</span></div>
       </div>
     </div>
   `;
 }
 
-// ─── Error View ──────────────────────────────────────────────────────────────
 function renderError(data) {
-  app.innerHTML = `
-    <div class="error-view">
-      <p style="font-size:24px;margin-bottom:8px">⚠️</p>
-      <p>${data.message || 'Something went wrong'}</p>
-    </div>
-  `;
+  app.innerHTML = `<div class="error-view"><p style="font-size:20px;margin-bottom:8px">⚠️</p><p>${data.message || 'Something went wrong'}</p></div>`;
 }
 
-// ─── Initialize ──────────────────────────────────────────────────────────────
 initializeBridge();
 </script>
 </body>
